@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { auth } from '@/auth';
 
 export async function POST(req: NextRequest) {
   try {
-    const { agentId, action, adminId, reason } = await req.json();
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
-    if (!agentId || !action || !adminId) {
+    const { agentId, action, reason } = await req.json();
+
+    if (!agentId || !action) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -30,7 +39,7 @@ export async function POST(req: NextRequest) {
     await db.audit.create({
       action: action,
       targetId: agentId,
-      actorId: adminId,
+      actorId: session.user.id,
       details: reason || `${action === 'APPROVE' ? 'Approved' : 'Rejected'} by admin`,
     });
 
@@ -53,7 +62,7 @@ export async function GET(req: NextRequest) {
     try {
         const scan = await db.scans.findByAgentId(agentId);
         return NextResponse.json({ scan });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to fetch scan' }, { status: 500 });
     }
 }

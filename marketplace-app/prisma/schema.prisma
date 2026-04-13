@@ -1,0 +1,260 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  BUYER
+  CREATOR
+  ADMIN
+}
+
+enum AgentStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+}
+
+enum AgentCategory {
+  AUTOMATION
+  DATA
+  COMMUNICATION
+  PRODUCTIVITY
+  DEVTOOLS
+  RESEARCH
+  OTHER
+}
+
+enum ScanStatus {
+  PASS
+  FAIL
+}
+
+enum PurchaseStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum AuditAction {
+  UPLOAD
+  SCAN
+  APPROVE
+  REJECT
+  PURCHASE
+  VIEW_AGENT
+  DOWNLOAD
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String?
+  email         String    @unique
+  passwordHash  String?
+  role          UserRole  @default(BUYER)
+  image         String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+
+  agents        Agent[]   @relation("CreatedAgents")
+  purchases     Purchase[]
+  licenses      License[]
+  auditLogs     AuditLog[]
+  reviews       Review[]
+  adminAlerts   AdminAlert[] @relation("AlertsByReporter")
+}
+
+model Account {
+  id                 String  @id @default(uuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Agent {
+  id                    String      @id @default(uuid())
+  name                  String
+  slug                  String      @unique
+  version               String
+  status                AgentStatus @default(DRAFT)
+  price                 Decimal     @default(0.0) @db.Decimal(10, 2)
+
+  creatorId             String
+  creatorName           String
+
+  displayName           String
+  description           String
+  category              AgentCategory @default(OTHER)
+  tags                  String[]
+  readmeText            String?     @db.Text
+  searchVector          Unsupported("tsvector")?
+
+  verified              Boolean     @default(false)
+  downloads             Int         @default(0)
+  rating                Float       @default(0)
+  reviewsCount          Int         @default(0)
+
+  permissionsNetwork    Boolean     @default(false)
+  permissionsFilesystem Boolean     @default(false)
+  permissionsSubprocess Boolean     @default(false)
+
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  creator               User        @relation("CreatedAgents", fields: [creatorId], references: [id], onDelete: Cascade)
+  scans                 ScanResult[]
+  auditLogs             AuditLog[]
+  purchases             Purchase[]
+  licenses              License[]
+  reviews               Review[]
+  adminAlerts           AdminAlert[]
+
+  @@index([creatorId])
+  @@index([status])
+  @@index([category])
+  @@index([searchVector], type: Gin, map: "Agent_searchVector_idx")
+}
+
+enum AdminAlertReason {
+  MALICIOUS_BEHAVIOR
+  MISLEADING_DESCRIPTION
+  BROKEN
+  SPAM
+}
+
+model AdminAlert {
+  id         String           @id @default(uuid())
+  agentId    String
+  reporterId String?
+  reason     AdminAlertReason
+  message    String?          @db.Text
+  metadata   Json?
+  createdAt  DateTime         @default(now())
+
+  agent      Agent            @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  reporter   User?            @relation("AlertsByReporter", fields: [reporterId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([agentId, createdAt])
+}
+
+model ScanResult {
+  id              String     @id @default(uuid())
+  agentId         String
+  version         String
+  passed          Boolean
+  findings        String[]
+
+  malwareClean    Boolean
+  secretsFound    String[]
+  disallowedFiles String[]
+  status          ScanStatus
+
+  createdAt       DateTime   @default(now())
+
+  agent           Agent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId, createdAt])
+}
+
+model AuditLog {
+  id        String      @id @default(uuid())
+  agentId   String
+  action    AuditAction
+  userId    String?
+  details   String
+  metadata  Json?
+  createdAt DateTime    @default(now())
+
+  agent     Agent       @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  user      User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([agentId, createdAt])
+}
+
+model Purchase {
+  id              String         @id @default(uuid())
+  userId          String
+  agentId         String
+  stripeSessionId String         @unique
+  status          PurchaseStatus @default(PENDING)
+  amount          Decimal        @db.Decimal(10, 2)
+  createdAt       DateTime       @default(now())
+
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent           Agent          @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([agentId, createdAt])
+}
+
+model License {
+  id         String   @id @default(uuid())
+  userId     String
+  agentId    String
+  createdAt  DateTime @default(now())
+  pricePaid  Decimal  @default(0.0) @db.Decimal(10, 2)
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, agentId])
+  @@index([agentId])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  agentId   String
+  userId    String
+  rating    Int
+  body      String?  @db.Text
+  createdAt DateTime @default(now())
+
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, userId])
+  @@index([agentId, createdAt])
+}

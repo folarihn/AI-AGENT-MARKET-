@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Menu, X, User as UserIcon } from 'lucide-react';
+import { Menu, X, User as UserIcon } from 'lucide-react';
 import { useState } from 'react';
+import { signOut, useSession } from 'next-auth/react';
 
 export function Navbar() {
-  const { user, logout } = useAuth();
+  const { data: session } = useSession();
+  const user = session?.user;
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -65,7 +66,7 @@ export function Navbar() {
                 <span className="text-sm text-gray-700">
                   {user.name} ({user.role})
                 </span>
-                <Button onClick={logout} variant="ghost">
+                <Button onClick={() => signOut({ callbackUrl: '/marketplace' })} variant="ghost">
                   Logout
                 </Button>
               </div>
@@ -73,9 +74,6 @@ export function Navbar() {
               <div className="flex space-x-4">
                 <Link href="/login">
                   <Button variant="ghost">Log in</Button>
-                </Link>
-                <Link href="/register">
-                  <Button>Sign up</Button>
                 </Link>
               </div>
             )}
@@ -132,7 +130,7 @@ export function Navbar() {
                     <div className="text-base font-medium text-gray-800">{user.name}</div>
                     <div className="text-sm font-medium text-gray-500">{user.email}</div>
                   </div>
-                  <button onClick={logout} className="ml-auto bg-white flex-shrink-0 p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                  <button onClick={() => signOut({ callbackUrl: '/marketplace' })} className="ml-auto bg-white flex-shrink-0 p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                     Logout
                   </button>
                 </div>
@@ -140,9 +138,6 @@ export function Navbar() {
                <div className="mt-3 space-y-1">
                   <Link href="/login" className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100">
                     Log in
-                  </Link>
-                  <Link href="/register" className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100">
-                    Sign up
                   </Link>
                 </div>
             )}

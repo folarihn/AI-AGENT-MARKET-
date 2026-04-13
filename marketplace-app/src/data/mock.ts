@@ -16,7 +16,7 @@ export interface Agent {
   name: string;
   displayName: string;
   description: string;
-  category: 'dev-tools' | 'content' | 'data';
+  category: 'AUTOMATION' | 'DATA' | 'COMMUNICATION' | 'PRODUCTIVITY' | 'DEVTOOLS' | 'RESEARCH' | 'OTHER';
   tags: string[];
   status: AgentStatus;
   price: number;
@@ -28,9 +28,11 @@ export interface Agent {
   downloads: number;
   rating: number;
   reviewsCount: number;
+  readmeText?: string;
   permissions: {
     network: boolean;
     filesystem: boolean;
+    subprocess?: boolean;
   };
 }
 
@@ -65,7 +67,7 @@ export const MOCK_AGENTS: Agent[] = [
     name: 'code-review-buddy',
     displayName: 'Code Review Buddy',
     description: 'Analyzes GitHub Pull Requests for common bugs and style violations.',
-    category: 'dev-tools',
+    category: 'DEVTOOLS',
     tags: ['github', 'code-quality'],
     status: 'PUBLISHED',
     price: 0,
@@ -77,7 +79,7 @@ export const MOCK_AGENTS: Agent[] = [
     downloads: 1250,
     rating: 4.8,
     reviewsCount: 42,
-    permissions: { network: true, filesystem: true },
+    permissions: { network: true, filesystem: true, subprocess: false },
   },
   {
     id: 'a2',
@@ -85,7 +87,7 @@ export const MOCK_AGENTS: Agent[] = [
     name: 'seo-blogsmith',
     displayName: 'SEO Blogsmith',
     description: 'Generates SEO-optimized articles from keywords.',
-    category: 'content',
+    category: 'PRODUCTIVITY',
     tags: ['seo', 'writing'],
     status: 'PUBLISHED',
     price: 19.99,
@@ -97,7 +99,7 @@ export const MOCK_AGENTS: Agent[] = [
     downloads: 850,
     rating: 4.5,
     reviewsCount: 15,
-    permissions: { network: true, filesystem: false },
+    permissions: { network: true, filesystem: false, subprocess: false },
   },
   {
     id: 'a3',
@@ -105,7 +107,7 @@ export const MOCK_AGENTS: Agent[] = [
     name: 'competitor-monitor',
     displayName: 'Competitor Monitor',
     description: 'Tracks competitor pricing changes.',
-    category: 'data',
+    category: 'DATA',
     tags: ['market-research', 'scraping'],
     status: 'PENDING_REVIEW',
     price: 49.00,

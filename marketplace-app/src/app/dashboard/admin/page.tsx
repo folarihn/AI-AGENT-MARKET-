@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
 import { MOCK_AGENTS, Agent } from '@/data/mock';
 import { Button } from '@/components/ui/button';
 import { Check, X, Eye, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 interface ScanResult {
     malwareClean: boolean;
@@ -14,19 +14,21 @@ interface ScanResult {
 }
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
+  const { data: session, status } = useSession();
+  const user = session?.user;
   // In a real app, fetch from API. For now using mock + state to simulate updates
   const [agents, setAgents] = useState<Agent[]>([]);
   const [scans, setScans] = useState<Record<string, ScanResult>>({});
   const [loading, setLoading] = useState(true);
 
+  const isAdmin = user?.role === 'ADMIN';
+
   useEffect(() => {
-    // Simulate fetching pending agents
-    const pending = MOCK_AGENTS.filter((a) => a.status === 'PENDING_REVIEW');
-    setAgents(pending);
-    
-    // Simulate fetching scans for each agent
-    const fetchScans = async () => {
+    if (!isAdmin) return;
+    const load = async () => {
+      const pending = MOCK_AGENTS.filter((a) => a.status === 'PENDING_REVIEW');
+      setAgents(pending);
+
         const newScans: Record<string, ScanResult> = {};
         for (const agent of pending) {
             try {
@@ -52,34 +54,37 @@ export default function AdminDashboard() {
         setLoading(false);
     };
 
-    fetchScans();
-  }, []);
+    load();
+  }, [isAdmin]);
 
-  if (!user || user.role !== 'ADMIN') {
+  if (status === 'loading') {
+    return <div className="p-8 text-center">Loading...</div>;
+  }
+
+  if (!isAdmin) {
     return <div className="p-8 text-center">Access Denied. Admin role required.</div>;
   }
 
   const handleReview = async (id: string, action: 'APPROVE' | 'REJECT') => {
     try {
-        const res = await fetch('/api/admin/review', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                agentId: id,
-                action,
-                adminId: user.id,
-                reason: action === 'REJECT' ? 'Admin rejection' : undefined
-            })
-        });
-        
-        if (res.ok) {
-            alert(`Agent ${action === 'APPROVE' ? 'Approved' : 'Rejected'} successfully`);
-            setAgents(agents.filter(a => a.id !== id)); // Remove from list
-        } else {
-            alert('Action failed');
-        }
-    } catch (e) {
-        alert('Error performing action');
+      const res = await fetch('/api/admin/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentId: id,
+          action,
+          reason: action === 'REJECT' ? 'Admin rejection' : undefined,
+        }),
+      });
+
+      if (res.ok) {
+        alert(`Agent ${action === 'APPROVE' ? 'Approved' : 'Rejected'} successfully`);
+        setAgents((prev) => prev.filter((a) => a.id !== id));
+      } else {
+        alert('Action failed');
+      }
+    } catch {
+      alert('Error performing action');
     }
   };
 
@@ -147,7 +152,6 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Scan Results Section */}
                   <div className="bg-gray-50 p-3 rounded-md border border-gray-200 text-sm">
                     <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
                         {scan?.status === 'PASS' ? (
@@ -175,8 +179,8 @@ export default function AdminDashboard() {
 
                     {(scan?.secretsFound?.length > 0 || scan?.disallowedFiles?.length > 0) && (
                         <div className="mt-2 p-2 bg-red-50 text-red-800 rounded border border-red-100 text-xs font-mono">
-                            {scan.secretsFound.map((s, i) => <div key={`s-${i}`}>⚠️ Secret: {s}</div>)}
-                            {scan.disallowedFiles.map((f, i) => <div key={`f-${i}`}>🚫 Disallowed: {f}</div>)}
+                            {(scan?.secretsFound ?? []).map((s, i) => <div key={`s-${i}`}>⚠️ Secret: {s}</div>)}
+                            {(scan?.disallowedFiles ?? []).map((f, i) => <div key={`f-${i}`}>🚫 Disallowed: {f}</div>)}
                         </div>
                     )}
                   </div>

@@ -1,26 +1,29 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Plus, Upload, Check } from 'lucide-react';
-import { MOCK_AGENTS, Agent } from '@/data/mock';
+import { Plus, Upload } from 'lucide-react';
+import { MOCK_AGENTS } from '@/data/mock';
+import { useSession } from 'next-auth/react';
 
 export default function CreatorDashboard() {
-  const { user } = useAuth();
-  const router = useRouter();
+  const { data: session, status } = useSession();
+  const user = session?.user;
   const [activeTab, setActiveTab] = useState<'list' | 'create'>('list');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    category: 'dev-tools',
+    category: 'DEVTOOLS',
     price: 0,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  if (status === 'loading') {
+    return <div className="p-8 text-center">Loading...</div>;
+  }
 
   if (!user || user.role !== 'CREATOR') {
     return <div className="p-8 text-center">Access Denied. Creator role required.</div>;
@@ -46,8 +49,6 @@ export default function CreatorDashboard() {
 
     const uploadData = new FormData();
     uploadData.append('file', file);
-    uploadData.append('creatorId', user.id);
-    uploadData.append('creatorName', user.name);
     uploadData.append('metadata', JSON.stringify({
       displayName: formData.name,
       description: formData.description,
@@ -74,8 +75,8 @@ export default function CreatorDashboard() {
         // In a real app, we would re-fetch the list here
         window.location.reload(); 
       }, 2000);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setIsSubmitting(false);
     }
@@ -133,7 +134,7 @@ export default function CreatorDashboard() {
               ))
             ) : (
               <li className="px-4 py-8 text-center text-gray-500">
-                You haven't submitted any agents yet.
+                You have not submitted any agents yet.
               </li>
             )}
           </ul>
@@ -183,9 +184,13 @@ export default function CreatorDashboard() {
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 >
-                  <option value="dev-tools">Dev Tools</option>
-                  <option value="content">Content</option>
-                  <option value="data">Data</option>
+                  <option value="AUTOMATION">Automation</option>
+                  <option value="DATA">Data</option>
+                  <option value="COMMUNICATION">Communication</option>
+                  <option value="PRODUCTIVITY">Productivity</option>
+                  <option value="DEVTOOLS">DevTools</option>
+                  <option value="RESEARCH">Research</option>
+                  <option value="OTHER">Other</option>
                 </select>
               </div>
               <div>

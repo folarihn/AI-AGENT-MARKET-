@@ -1,57 +1,103 @@
-'use client';
-
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { MOCK_AGENTS } from '@/data/mock';
-import { Button } from '@/components/ui/button';
-import { Search, ShieldCheck, Star } from 'lucide-react';
+import { ShieldCheck, Star } from 'lucide-react';
+import { AgentCategory } from '@prisma/client';
+import { searchAgents } from '@/lib/agentSearch';
+import MarketplaceFilters from '@/components/MarketplaceFilters';
 
-export default function MarketplacePage() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+type AgentListItem = {
+  id: string;
+  slug: string;
+  displayName: string;
+  description: string;
+  category: AgentCategory;
+  price: number;
+  creatorName: string;
+  version: string;
+  updatedAt: Date;
+  verified: boolean;
+  downloads: number;
+  rating: number;
+  reviewsCount: number;
+};
 
-  const filteredAgents = MOCK_AGENTS.filter((agent) => {
-    const matchesSearch =
-      agent.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      agent.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      selectedCategory === 'all' || agent.category === selectedCategory;
-    const isPublished = agent.status === 'PUBLISHED';
-    return matchesSearch && matchesCategory && isPublished;
+type PageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function parseParam(v: string | string[] | undefined) {
+  return Array.isArray(v) ? v[0] : v;
+}
+
+function normalizeCategory(v: string | undefined): AgentCategory | null {
+  if (!v) return null;
+  const upper = v.trim().toUpperCase();
+  const allowed = new Set<AgentCategory>([
+    'AUTOMATION',
+    'DATA',
+    'COMMUNICATION',
+    'PRODUCTIVITY',
+    'DEVTOOLS',
+    'RESEARCH',
+    'OTHER',
+  ]);
+  return allowed.has(upper as AgentCategory) ? (upper as AgentCategory) : null;
+}
+
+function parseNumber(v: string | undefined): number | null {
+  if (!v) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+export default async function MarketplacePage({ searchParams }: PageProps) {
+  const sp = (await searchParams) || {};
+
+  const q = (parseParam(sp.q) || '').trim();
+  const category = normalizeCategory(parseParam(sp.category));
+  const priceMin = parseNumber(parseParam(sp.priceMin));
+  const priceMax = parseNumber(parseParam(sp.priceMax));
+  const sort = (parseParam(sp.sort) || 'popular') as 'popular' | 'newest' | 'price';
+
+  const data = await searchAgents({
+    q,
+    category,
+    priceMin,
+    priceMax,
+    sort,
+    page: 1,
+    pageSize: 24,
   });
+
+  const categories = [
+    { key: null as AgentCategory | null, label: 'All', count: data.total },
+    { key: 'AUTOMATION' as const, label: 'Automation', count: data.countsByCategory.AUTOMATION || 0 },
+    { key: 'DATA' as const, label: 'Data', count: data.countsByCategory.DATA || 0 },
+    { key: 'COMMUNICATION' as const, label: 'Communication', count: data.countsByCategory.COMMUNICATION || 0 },
+    { key: 'PRODUCTIVITY' as const, label: 'Productivity', count: data.countsByCategory.PRODUCTIVITY || 0 },
+    { key: 'DEVTOOLS' as const, label: 'DevTools', count: data.countsByCategory.DEVTOOLS || 0 },
+    { key: 'RESEARCH' as const, label: 'Research', count: data.countsByCategory.RESEARCH || 0 },
+    { key: 'OTHER' as const, label: 'Other', count: data.countsByCategory.OTHER || 0 },
+  ];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <h1 className="text-3xl font-bold text-gray-900">Browse Agents</h1>
-        <div className="flex w-full md:w-auto gap-4">
-          <div className="relative flex-grow md:w-80">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              placeholder="Search agents..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="block w-40 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-          >
-            <option value="all">All Categories</option>
-            <option value="dev-tools">Dev Tools</option>
-            <option value="content">Content</option>
-            <option value="data">Data</option>
-          </select>
-        </div>
+        <MarketplaceFilters
+          initial={{
+            q,
+            category,
+            priceMin: priceMin?.toString() || '',
+            priceMax: priceMax?.toString() || '',
+            sort,
+          }}
+          categories={categories}
+        />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredAgents.map((agent) => (
+        {data.items.map((agent: AgentListItem) => (
           <Link href={`/agent/${agent.slug}`} key={agent.id} className="group">
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-6 h-full flex flex-col">
               <div className="flex justify-between items-start mb-4">
@@ -87,18 +133,9 @@ export default function MarketplacePage() {
         ))}
       </div>
 
-      {filteredAgents.length === 0 && (
+      {data.items.length === 0 && (
         <div className="text-center py-12">
           <p className="text-gray-500 text-lg">No agents found matching your criteria.</p>
-          <Button
-            variant="link"
-            onClick={() => {
-              setSearchTerm('');
-              setSelectedCategory('all');
-            }}
-          >
-            Clear filters
-          </Button>
         </div>
       )}
     </div>

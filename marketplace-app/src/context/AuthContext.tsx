@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { User, MOCK_USERS } from '@/data/mock';
 
 interface AuthContextType {
@@ -13,17 +13,11 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Check local storage on mount
+  const [user, setUser] = useState<User | null>(() => {
     const storedUser = localStorage.getItem('marketplace_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
-  }, []);
+    return storedUser ? (JSON.parse(storedUser) as User) : null;
+  });
+  const [isLoading] = useState(false);
 
   const login = (role: string) => {
     // Simulate login by picking the first user with the matching role

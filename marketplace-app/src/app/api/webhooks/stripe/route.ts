@@ -1,73 +1,103 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', {
-  apiVersion: '2024-06-20',
-});
+export const runtime = 'nodejs';
 
-const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_mock';
+function requiredEnv(name: string) {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing env var: ${name}`);
+  return value;
+}
+
+function getStripe() {
+  return new Stripe(requiredEnv('STRIPE_SECRET_KEY'), { apiVersion: '2026-01-28.clover' });
+}
 
 export async function POST(request: Request) {
-  const body = await request.text();
+  const rawBody = await request.text();
   const sig = request.headers.get('stripe-signature');
+  if (!sig) return NextResponse.json({ error: 'Missing stripe-signature header' }, { status: 400 });
+
+  const stripe = getStripe();
+  const webhookSecret = requiredEnv('STRIPE_WEBHOOK_SECRET');
 
   let event: Stripe.Event;
-
   try {
-    // In a real environment, verify the signature
-    // event = stripe.webhooks.constructEvent(body, sig!, endpointSecret);
-    
-    // For MVP/Demo without real Stripe, we parse the body directly
-    // This allows us to simulate webhooks from our frontend
-    const jsonBody = JSON.parse(body);
-    event = jsonBody as Stripe.Event;
-    
-  } catch (err: any) {
-    console.error(`Webhook Error: ${err.message}`);
-    return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
+    event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Invalid signature';
+    return NextResponse.json({ error: `Webhook signature verification failed: ${message}` }, { status: 400 });
   }
 
-  // Handle the event
-  switch (event.type) {
-    case 'checkout.session.completed':
-      const session = event.data.object as Stripe.Checkout.Session;
-      await handleCheckoutSessionCompleted(session);
-      break;
-    default:
-      console.log(`Unhandled event type ${event.type}`);
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object as Stripe.Checkout.Session;
+    await fulfillCheckoutSession(session);
   }
 
   return NextResponse.json({ received: true });
 }
 
-async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+async function fulfillCheckoutSession(session: Stripe.Checkout.Session) {
   const sessionId = session.id;
-  
-  // 1. Find the pending purchase
-  const purchase = await db.purchases.findBySessionId(sessionId);
-  if (!purchase) {
-    console.error('Purchase not found for session:', sessionId);
-    return;
+  const metadata = session.metadata ?? {};
+  const userId = typeof metadata.userId === 'string' ? metadata.userId : '';
+  const agentId = typeof metadata.agentId === 'string' ? metadata.agentId : '';
+
+  if (!userId || !agentId) {
+    throw new Error('checkout.session.completed missing metadata userId/agentId');
   }
 
-  // 2. Update purchase status
-  await db.purchases.updateStatus(purchase.id, 'completed');
+  const amount = typeof session.amount_total === 'number' ? session.amount_total / 100 : 0;
 
-  // 3. Create License
-  await db.licenses.create({
-    userId: purchase.userId,
-    agentId: purchase.agentId,
-    pricePaid: purchase.amount,
+  await prisma.$transaction(async (tx) => {
+    const existing = await tx.purchase.findUnique({ where: { stripeSessionId: sessionId } });
+    if (existing?.status === 'COMPLETED') {
+      return;
+    }
+
+    if (!existing) {
+      await tx.purchase.create({
+        data: {
+          userId,
+          agentId,
+          stripeSessionId: sessionId,
+          status: 'COMPLETED',
+          amount: new Prisma.Decimal(amount),
+        },
+      });
+    } else {
+      await tx.purchase.update({
+        where: { id: existing.id },
+        data: { status: 'COMPLETED' },
+      });
+    }
+
+    await tx.license.upsert({
+      where: {
+        userId_agentId: { userId, agentId },
+      },
+      update: {
+        pricePaid: new Prisma.Decimal(amount),
+      },
+      create: {
+        userId,
+        agentId,
+        pricePaid: new Prisma.Decimal(amount),
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        agentId,
+        action: 'PURCHASE',
+        userId,
+        details: `Stripe checkout.session.completed: ${sessionId}`,
+        metadata: {
+          stripeSessionId: sessionId,
+        },
+      },
+    });
   });
-
-  // 4. Audit Log
-  await db.audit.create({
-    action: 'APPROVE', // Reusing APPROVE or create a new BUY action type
-    targetId: purchase.agentId,
-    actorId: purchase.userId,
-    details: `Purchase completed for agent ${purchase.agentId}`,
-  });
-
-  console.log(`Purchase fulfilled for user ${purchase.userId} and agent ${purchase.agentId}`);
 }

@@ -1,18 +1,20 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { auth } from '@/auth';
+import { storage } from '@/lib/storage';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { searchParams } = new URL(request.url);
-  const userId = searchParams.get('userId');
+  const session = await auth();
 
-  if (!userId) {
+  if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const agentId = params.id;
+  const { id: agentId } = await context.params;
   const agent = await db.agents.findById(agentId);
 
   if (!agent) {
@@ -23,10 +25,10 @@ export async function GET(
   const isFree = agent.price === 0;
   
   if (!isFree) {
-    const license = await db.licenses.check(userId, agentId);
+    const license = await db.licenses.check(session.user.id, agentId);
     
     // Also check if user is the creator (creators can download their own agents)
-    const isCreator = agent.creatorId === userId;
+    const isCreator = agent.creatorId === session.user.id;
 
     if (!license && !isCreator) {
       return NextResponse.json({ error: 'Payment required' }, { status: 403 });
@@ -36,16 +38,16 @@ export async function GET(
   // Increment download count
   await db.agents.update(agentId, { downloads: agent.downloads + 1 });
 
-  // In a real app, you would generate a presigned URL for S3
-  // return NextResponse.redirect(presignedUrl);
-
-  // For MVP, we return a mock file download
-  const mockContent = `Package content for ${agent.name} (v${agent.version})\n\nThis is a secure download.`;
-  
-  return new NextResponse(mockContent, {
-    headers: {
-      'Content-Type': 'application/octet-stream',
-      'Content-Disposition': `attachment; filename="${agent.name.replace(/\s+/g, '_')}_v${agent.version}.zip"`,
+  await prisma.auditLog.create({
+    data: {
+      agentId,
+      action: 'DOWNLOAD',
+      userId: session.user.id,
+      details: 'Agent downloaded',
     },
   });
+
+  const storagePath = `agents/${agentId}/${agent.version}/package.zip`;
+  const url = await storage.getPresignedDownloadUrl(storagePath, 600);
+  return NextResponse.redirect(url);
 }

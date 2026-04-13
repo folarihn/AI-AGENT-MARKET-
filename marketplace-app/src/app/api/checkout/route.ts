@@ -1,18 +1,31 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { db } from '@/lib/db';
+import { auth } from '@/auth';
 
-// Initialize Stripe with a mock key if env var is missing
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', {
-  apiVersion: '2024-06-20', // Use a recent API version
-});
+export const runtime = 'nodejs';
+
+function requiredEnv(name: string) {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing env var: ${name}`);
+  return value;
+}
+
+function getStripe() {
+  return new Stripe(requiredEnv('STRIPE_SECRET_KEY'), { apiVersion: '2026-01-28.clover' });
+}
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { agentId, userId, price } = body;
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    if (!agentId || !userId || !price) {
+    const body = await request.json();
+    const agentId = typeof body?.agentId === 'string' ? body.agentId : '';
+
+    if (!agentId) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -24,27 +37,49 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
     }
 
-    // In a real app, you'd create a Stripe Checkout Session here
-    // const session = await stripe.checkout.sessions.create({ ... });
+    const priceNumber = agent.price;
 
-    // MOCK IMPLEMENTATION
-    const mockSessionId = `cs_test_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Create a pending purchase record
-    await db.purchases.create({
-      userId,
-      agentId,
-      amount: price,
-      status: 'pending',
-      stripeSessionId: mockSessionId,
+    if (priceNumber <= 0) {
+      return NextResponse.json({ error: 'This agent is free. No checkout required.' }, { status: 400 });
+    }
+
+    const origin = request.headers.get('origin') || new URL(request.url).origin;
+    const stripe = getStripe();
+
+    const checkoutSession = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: 'usd',
+            unit_amount: Math.round(priceNumber * 100),
+            product_data: {
+              name: agent.displayName,
+            },
+          },
+        },
+      ],
+      metadata: {
+        userId: session.user.id,
+        agentId,
+      },
+      customer_email: session.user.email ?? undefined,
+      success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/agent/${agent.slug}`,
     });
 
-    // Return the session ID and a mock URL to redirect to
-    // In production, Stripe returns a session.url
-    // For this MVP, we redirect to a local success page that simulates the return
+    await db.purchases.create({
+      userId: session.user.id,
+      agentId,
+      amount: priceNumber,
+      status: 'pending',
+      stripeSessionId: checkoutSession.id,
+    });
+
     return NextResponse.json({
-      sessionId: mockSessionId,
-      url: `/checkout/success?session_id=${mockSessionId}`, 
+      sessionId: checkoutSession.id,
+      url: checkoutSession.url,
     });
 
   } catch (error) {
