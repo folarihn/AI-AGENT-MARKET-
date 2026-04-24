@@ -159,6 +159,7 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ sl
     name: agent.name,
     displayName: agent.displayName,
     description: agent.description,
+    creatorId: agent.creatorId,
     creatorName: agent.creatorName,
     version: agent.version,
     updatedAt: agent.updatedAt.toISOString().slice(0, 10),

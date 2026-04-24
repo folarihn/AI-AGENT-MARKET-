@@ -12,7 +12,7 @@ export default function MarketplaceFilters({
   initial,
   categories,
 }: {
-  initial: { q: string; category: AgentCategory | null; priceMin: string; priceMax: string; sort: Sort };
+  initial: { q: string; category: AgentCategory | null; itemType: 'AGENT' | 'SKILL' | 'ALL'; priceMin: string; priceMax: string; sort: Sort };
   categories: Array<{ key: AgentCategory | null; label: string; count: number }>;
 }) {
   const router = useRouter();
@@ -21,20 +21,23 @@ export default function MarketplaceFilters({
 
   const [q, setQ] = useState(initial.q);
   const [category, setCategory] = useState<AgentCategory | null>(initial.category);
+  const [itemType, setItemType] = useState<'AGENT' | 'SKILL' | 'ALL'>(initial.itemType);
   const [priceMin, setPriceMin] = useState(initial.priceMin);
   const [priceMax, setPriceMax] = useState(initial.priceMax);
   const [sort, setSort] = useState<Sort>(initial.sort);
 
-  const push = (next: { q?: string; category?: AgentCategory | null; priceMin?: string; priceMax?: string; sort?: Sort }) => {
+  const push = (next: { q?: string; category?: AgentCategory | null; itemType?: 'AGENT' | 'SKILL' | 'ALL'; priceMin?: string; priceMax?: string; sort?: Sort }) => {
     const params = new URLSearchParams();
     const nq = next.q ?? q;
     const nc = next.category !== undefined ? next.category : category;
+    const ni = next.itemType ?? itemType;
     const pmin = next.priceMin ?? priceMin;
     const pmax = next.priceMax ?? priceMax;
     const s = next.sort ?? sort;
 
     if (nq.trim()) params.set('q', nq.trim());
     if (nc) params.set('category', nc);
+    if (ni !== 'ALL') params.set('itemType', ni);
     if (pmin.trim()) params.set('priceMin', pmin.trim());
     if (pmax.trim()) params.set('priceMax', pmax.trim());
     if (s !== 'popular') params.set('sort', s);
@@ -82,6 +85,24 @@ export default function MarketplaceFilters({
       </div>
 
       <div className="flex flex-wrap gap-2 mt-4">
+        <div className="flex border border-gray-200 rounded-md overflow-hidden bg-white mr-4">
+          {(['ALL', 'AGENT', 'SKILL'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => {
+                setItemType(t);
+                push({ itemType: t });
+              }}
+              className={`px-4 py-1 text-sm font-medium ${
+                itemType === t
+                  ? 'bg-indigo-50 text-indigo-700'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {t === 'ALL' ? 'All' : t === 'AGENT' ? 'Agents' : 'Skills'}
+            </button>
+          ))}
+        </div>
         {categories.map((c) => (
           <button
             key={c.label}

@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
   const priceMin = parseNumber(searchParams.get('priceMin'));
   const priceMax = parseNumber(searchParams.get('priceMax'));
   const sort = (searchParams.get('sort') || 'popular') as 'popular' | 'newest' | 'price';
+  const itemType = (searchParams.get('itemType') || 'ALL') as 'AGENT' | 'SKILL' | 'ALL';
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
   const pageSize = Math.min(60, Math.max(1, parseInt(searchParams.get('pageSize') || '24', 10)));
 
@@ -40,6 +41,7 @@ export async function GET(req: NextRequest) {
     priceMin,
     priceMax,
     sort,
+    itemType,
     page,
     pageSize,
   });

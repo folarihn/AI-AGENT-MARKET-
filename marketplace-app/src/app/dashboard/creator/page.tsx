@@ -11,6 +11,7 @@ export default function CreatorDashboard() {
   const user = session?.user;
   const [activeTab, setActiveTab] = useState<'list' | 'create'>('list');
   const [formData, setFormData] = useState({
+    itemType: 'AGENT' as 'AGENT' | 'SKILL',
     name: '',
     description: '',
     category: 'DEVTOOLS',
@@ -21,12 +22,45 @@ export default function CreatorDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const [isUpgrading, setIsUpgrading] = useState(false);
+
   if (status === 'loading') {
     return <div className="p-8 text-center">Loading...</div>;
   }
 
-  if (!user || user.role !== 'CREATOR') {
-    return <div className="p-8 text-center">Access Denied. Creator role required.</div>;
+  if (!user) {
+    return <div className="p-8 text-center">Please log in to access this page.</div>;
+  }
+
+  if (user.role !== 'CREATOR' && user.role !== 'ADMIN') {
+    const handleUpgrade = async () => {
+      setIsUpgrading(true);
+      try {
+        const res = await fetch('/api/creator/upgrade', { method: 'POST' });
+        if (res.ok) {
+          window.location.reload();
+        } else {
+          setError('Failed to upgrade account.');
+        }
+      } catch {
+        setError('Failed to upgrade account.');
+      } finally {
+        setIsUpgrading(false);
+      }
+    };
+
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-16 text-center">
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">Publish your own Agents</h1>
+        <p className="text-lg text-gray-600 mb-8">
+          You currently have a Buyer account. To submit and sell agents on the marketplace, you need to upgrade to a Creator account. It&apos;s completely free!
+        </p>
+        {error && <div className="text-red-600 mb-4">{error}</div>}
+        <Button size="lg" onClick={handleUpgrade} disabled={isUpgrading}>
+          {isUpgrading ? 'Upgrading...' : 'Become a Creator'}
+        </Button>
+      </div>
+    );
   }
 
   const myAgents = MOCK_AGENTS.filter((a) => a.creatorId === user.id);
@@ -50,6 +84,7 @@ export default function CreatorDashboard() {
     const uploadData = new FormData();
     uploadData.append('file', file);
     uploadData.append('metadata', JSON.stringify({
+      itemType: formData.itemType,
       displayName: formData.name,
       description: formData.description,
       category: formData.category,
@@ -108,6 +143,9 @@ export default function CreatorDashboard() {
                       <div className="ml-4">
                         <div className="text-sm font-medium text-indigo-600 truncate">
                           {agent.displayName}
+                          <span className="ml-2 inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                            {agent.itemType === 'SKILL' ? 'Skill' : 'Agent'}
+                          </span>
                         </div>
                         <div className="flex items-center text-sm text-gray-500">
                           <span
@@ -156,6 +194,31 @@ export default function CreatorDashboard() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Type</label>
+              <div className="mt-2 flex items-center space-x-4">
+                <label className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    className="form-radio h-4 w-4 text-indigo-600 border-gray-300"
+                    value="AGENT"
+                    checked={formData.itemType === 'AGENT'}
+                    onChange={() => setFormData({ ...formData, itemType: 'AGENT' })}
+                  />
+                  <span className="ml-2 text-sm text-gray-700">AI Agent</span>
+                </label>
+                <label className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    className="form-radio h-4 w-4 text-indigo-600 border-gray-300"
+                    value="SKILL"
+                    checked={formData.itemType === 'SKILL'}
+                    onChange={() => setFormData({ ...formData, itemType: 'SKILL' })}
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Skill File</span>
+                </label>
+              </div>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Display Name</label>
               <input

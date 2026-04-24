@@ -34,11 +34,12 @@ export default auth((req: NextRequest) => {
     return NextResponse.redirect(new URL('/marketplace', req.url));
   }
 
-  if (requiresCreator && role !== 'CREATOR') {
+  if (requiresCreator && role !== 'CREATOR' && role !== 'ADMIN') {
+    // Only block actual creator API endpoints, not the creator dashboard UI (so they can upgrade)
     if (isApiPath(pathname)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    return NextResponse.redirect(new URL('/marketplace', req.url));
+    // We let them through to /dashboard/creator to see the "Become a Creator" UI
   }
 
   return NextResponse.next();

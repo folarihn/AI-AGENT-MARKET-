@@ -3,8 +3,11 @@ import JSZip from 'jszip';
 import { db } from '@/lib/db';
 import { storage } from '@/lib/storage';
 import { scanner } from '@/lib/scanner';
+import { detectAssetTypeAndValidate, type AssetType, type SkillManifest } from '@/lib/skills/validation';
 import { AgentStatus } from '@/data/mock';
 import { auth } from '@/auth';
+
+type PricingModel = 'FREE' | 'ONE_TIME' | 'PER_CALL';
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,35 +33,91 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'File must be a .zip archive' }, { status: 400 });
     }
 
-    // 1. Validate Zip Content
     const buffer = await file.arrayBuffer();
+    const { assetType, manifest, errors } = await detectAssetTypeAndValidate(buffer);
+
+    if (errors.length > 0) {
+      const criticalErrors = errors.filter(e => e.severity === 'ERROR');
+      if (criticalErrors.length > 0) {
+        return NextResponse.json({ 
+          error: 'Validation failed', 
+          details: criticalErrors.map(e => ({ rule: e.rule, detail: e.detail })) 
+        }, { status: 400 });
+      }
+    }
+
+    if (assetType === 'SKILL' && !manifest) {
+      return NextResponse.json({ error: 'Invalid skill.json' }, { status: 400 });
+    }
+
     const zip = await JSZip.loadAsync(buffer);
-    
-    // Check for required files
-    const hasAgentJson = Object.keys(zip.files).some(name => name.endsWith('agent.json'));
     const hasReadme = Object.keys(zip.files).some(name => name.endsWith('README.md'));
 
-    if (!hasAgentJson) {
-      return NextResponse.json({ error: 'Package missing agent.json' }, { status: 400 });
-    }
     if (!hasReadme) {
       return NextResponse.json({ error: 'Package missing README.md' }, { status: 400 });
     }
 
-    // Validate agent.json content
-    let agentJsonContent;
-    try {
+    let name: string;
+    let displayName: string;
+    let description: string;
+    let version: string;
+    let permissions: { network: boolean; filesystem: boolean; subprocess: boolean };
+    let pricingModel: PricingModel;
+    let pricePerCall: number | undefined;
+    let runtime: string | undefined;
+    let inputs: unknown;
+    let outputs: unknown;
+    let tags: string[];
+
+    if (assetType === 'SKILL' && manifest) {
+      name = manifest.name;
+      displayName = manifest.name;
+      description = manifest.description;
+      version = manifest.version;
+      runtime = manifest.runtime;
+      inputs = manifest.inputs;
+      outputs = manifest.outputs;
+      tags = manifest.tags || [];
+
+      const permSet = new Set(manifest.permissions.map(p => p.toLowerCase()));
+      permissions = {
+        network: permSet.has('network'),
+        filesystem: permSet.has('filesystem'),
+        subprocess: permSet.has('subprocess'),
+      };
+
+      const modelMap: Record<string, PricingModel> = {
+        free: 'FREE',
+        one_time: 'ONE_TIME',
+        per_call: 'PER_CALL',
+      };
+      pricingModel = modelMap[manifest.pricing_model] || 'ONE_TIME';
+
+      if (manifest.price_per_call) {
+        pricePerCall = manifest.price_per_call;
+      }
+    } else {
+      let agentJsonContent: Record<string, unknown> = {};
       const agentJsonFile = Object.keys(zip.files).find(name => name.endsWith('agent.json'));
       if (agentJsonFile) {
         const content = await zip.file(agentJsonFile)?.async('string');
         agentJsonContent = JSON.parse(content || '{}');
       }
-    } catch {
-      return NextResponse.json({ error: 'Invalid agent.json format' }, { status: 400 });
-    }
 
-    if (!agentJsonContent.name || !agentJsonContent.version) {
-      return NextResponse.json({ error: 'agent.json missing name or version' }, { status: 400 });
+      name = agentJsonContent.name;
+      displayName = metadata.displayName || agentJsonContent.display_name || agentJsonContent.name;
+      description = metadata.description || agentJsonContent.description;
+      version = agentJsonContent.version;
+      tags = metadata.tags || agentJsonContent.tags || [];
+
+      const permSet = new Set((agentJsonContent.permissions || []).map((p: string) => p.toLowerCase()));
+      permissions = {
+        network: permSet.has('network'),
+        filesystem: permSet.has('filesystem'),
+        subprocess: permSet.has('subprocess'),
+      };
+
+      pricingModel = 'ONE_TIME';
     }
 
     const normalizeCategory = (value: unknown) => {
@@ -75,30 +134,6 @@ export async function POST(req: NextRequest) {
       return (allowed.includes(candidate as Cat) ? (candidate as Cat) : 'OTHER') as Cat;
     };
 
-    const parsePermissions = (value: unknown) => {
-      const base = { network: false, filesystem: false, subprocess: false };
-      if (!value) return base;
-      if (Array.isArray(value)) {
-        const normalized = value.map((v) => String(v).toLowerCase());
-        if (normalized.includes('none')) return base;
-        return {
-          network: normalized.includes('network'),
-          filesystem: normalized.includes('filesystem'),
-          subprocess: normalized.includes('subprocess'),
-        };
-      }
-      if (typeof value === 'object') {
-        const obj = value as Record<string, unknown>;
-        return {
-          network: Boolean(obj.network),
-          filesystem: Boolean(obj.filesystem),
-          subprocess: Boolean(obj.subprocess),
-        };
-      }
-      return base;
-    };
-
-    // 2. Perform Security Scan (Blocking for MVP)
     const advanced = await scanner.scanZip(zip, { archiveByteLength: buffer.byteLength });
     const scanResults = {
       status: advanced.passed ? 'PASS' as const : 'FAIL' as const,
@@ -107,64 +142,66 @@ export async function POST(req: NextRequest) {
       disallowedFiles: advanced.findings.filter(f => f.rule === 'ALLOWLIST').map(f => f.file),
     };
 
-    // 3. Determine Initial Status
-    // Auto-reject if scan failed (e.g., malware or secrets found)
     const initialStatus: AgentStatus = scanResults.status === 'PASS' ? 'PENDING_REVIEW' : 'REJECTED';
 
-    // 4. Save to DB
     const readmeFile = Object.keys(zip.files).find((n) => n.endsWith('README.md'));
     const readmeText = readmeFile ? await zip.file(readmeFile)?.async('string') : undefined;
 
-    const newAgent = await db.agents.create({
-      slug: agentJsonContent.name, // In real app, handle slug uniqueness
-      name: agentJsonContent.name,
-      displayName: metadata.displayName || agentJsonContent.display_name || agentJsonContent.name,
-      description: metadata.description || agentJsonContent.description,
-      category: normalizeCategory(metadata.category || agentJsonContent.category),
-      tags: metadata.tags || agentJsonContent.tags || [],
+    const newAsset = await db.agents.create({
+      slug: name,
+      itemType,
+      name,
+      displayName,
+      description,
+      category: normalizeCategory(metadata.category || 'OTHER'),
+      tags,
       status: initialStatus,
-      price: parseFloat(metadata.price) || 0,
+      price: assetType === 'SKILL' && pricingModel === 'ONE_TIME' 
+        ? (metadata.price || (manifest as SkillManifest)?.price_one_time || 0)
+        : (metadata.price || 0),
       creatorId: creatorId,
       creatorName: creatorName,
-      version: agentJsonContent.version,
+      version,
       readmeText: readmeText || undefined,
-      permissions: parsePermissions(agentJsonContent.permissions),
+      permissions,
+      pricingModel,
+      pricePerCall: pricePerCall || null,
+      runtime: runtime || null,
+      inputs: inputs || null,
+      outputs: outputs || null,
     });
 
-    // 5. Store Package (Cloudflare R2)
-    const storagePath = await storage.savePackage(newAgent.id, newAgent.version, Buffer.from(buffer));
+    const storagePath = await storage.savePackage(newAsset.id, newAsset.version, Buffer.from(buffer));
 
-    // 6. Save Scan Results
     await db.scans.create({
-      agentId: newAgent.id,
-      agentVersion: newAgent.version,
+      agentId: newAsset.id,
+      agentVersion: newAsset.version,
       malwareClean: scanResults.malwareClean,
       secretsFound: scanResults.secretsFound,
       disallowedFiles: scanResults.disallowedFiles,
       status: scanResults.status,
     });
 
-    // 7. Create Audit Log
     await db.audit.create({
       action: 'UPLOAD',
-      targetId: newAgent.id,
+      targetId: newAsset.id,
       actorId: creatorId,
-      details: `Uploaded version ${newAgent.version}. Scan status: ${scanResults.status}. Storage: ${storagePath}`,
+      details: `Uploaded ${assetType.toLowerCase()} version ${newAsset.version}. Scan: ${scanResults.status}. Storage: ${storagePath}`,
     });
     
-    // If auto-rejected, log that too
     if (initialStatus === 'REJECTED') {
       await db.audit.create({
         action: 'REJECT',
-        targetId: newAgent.id,
+        targetId: newAsset.id,
         actorId: 'system',
-        details: `Auto-rejected due to scan failure: ${scanResults.secretsFound.length} secrets, ${scanResults.disallowedFiles.length} disallowed files.`,
+        details: `Auto-rejected: ${scanResults.secretsFound.length} secrets, ${scanResults.disallowedFiles.length} disallowed files.`,
       });
     }
 
     return NextResponse.json({ 
       success: true, 
-      agent: newAgent,
+      asset: newAsset,
+      assetType,
       scanStatus: scanResults.status,
       storagePath
     });

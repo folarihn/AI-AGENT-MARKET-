@@ -1,6 +1,6 @@
 import { Agent } from '@/data/mock';
 import { prisma } from '@/lib/prisma';
-import { Prisma, Agent as PrismaAgent, AgentStatus, AgentCategory } from '@prisma/client';
+import { Prisma, Agent as PrismaAgent, AgentStatus, AgentCategory, PricingModel } from '@prisma/client';
 
 // Define Scan Result Types
 export interface ScanResult {
@@ -17,7 +17,7 @@ export interface ScanResult {
 // Define Audit Log Types
 export interface AuditLog {
   id: string;
-  action: 'UPLOAD' | 'APPROVE' | 'REJECT' | 'SCAN' | 'PURCHASE' | 'VIEW_AGENT' | 'DOWNLOAD';
+  action: 'UPLOAD' | 'APPROVE' | 'REJECT' | 'SCAN' | 'PURCHASE' | 'VIEW_AGENT' | 'DOWNLOAD' | 'SKILL_CALL';
   targetId: string; // Agent ID
   actorId: string; // User ID
   details: string;
@@ -87,9 +87,10 @@ function auditActionToDb(
   return 'PURCHASE';
 }
 
-function prismaAgentToApp(agent: PrismaAgent): Agent {
+function prismaAgentToApp(agent: PrismaAgent & { itemType?: string }): Agent {
   return {
     id: agent.id,
+    itemType: (agent.itemType as 'AGENT' | 'SKILL') || 'AGENT',
     slug: agent.slug,
     name: agent.name,
     displayName: agent.displayName,
@@ -117,10 +118,11 @@ function prismaAgentToApp(agent: PrismaAgent): Agent {
 
 export const db = {
   agents: {
-    findMany: async (filter?: { creatorId?: string; status?: string }) => {
+    findMany: async (filter?: { creatorId?: string; status?: string; itemType?: 'AGENT' | 'SKILL' }) => {
       const where: Prisma.AgentWhereInput = {};
       if (filter?.creatorId) where.creatorId = filter.creatorId;
       if (filter?.status) where.status = filter.status as AgentStatus;
+      if (filter?.itemType) where.itemType = filter.itemType;
 
       const result = await prisma.agent.findMany({
         where,
@@ -133,9 +135,10 @@ export const db = {
       const agent = await prisma.agent.findUnique({ where: { id } });
       return agent ? prismaAgentToApp(agent) : undefined;
     },
-    create: async (data: Omit<Agent, 'id' | 'updatedAt' | 'verified' | 'downloads' | 'rating' | 'reviewsCount'>) => {
+    create: async (data: Omit<Agent, 'id' | 'updatedAt' | 'verified' | 'downloads' | 'rating' | 'reviewsCount'> & { itemType?: 'AGENT' | 'SKILL'; pricingModel?: 'FREE' | 'ONE_TIME' | 'PER_CALL'; pricePerCall?: number | null; runtime?: string | null; inputs?: unknown; outputs?: unknown }) => {
       const created = await prisma.agent.create({
         data: {
+          itemType: data.itemType || 'AGENT',
           name: data.name,
           slug: data.slug,
           version: data.version,
@@ -155,6 +158,11 @@ export const db = {
           permissionsNetwork: data.permissions?.network ?? false,
           permissionsFilesystem: data.permissions?.filesystem ?? false,
           permissionsSubprocess: data.permissions?.subprocess ?? false,
+          pricingModel: data.pricingModel || 'ONE_TIME',
+          pricePerCall: data.pricePerCall != null ? new Prisma.Decimal(data.pricePerCall) : null,
+          runtime: data.runtime ?? null,
+          inputs: data.inputs ?? null,
+          outputs: data.outputs ?? null,
         },
       });
 

@@ -9,6 +9,7 @@ export type AgentListItem = {
   displayName: string;
   description: string;
   category: AgentCategory;
+  itemType: 'AGENT' | 'SKILL';
   price: number;
   creatorName: string;
   version: string;
@@ -33,6 +34,7 @@ export type AgentSearchParams = {
   priceMin?: number | null;
   priceMax?: number | null;
   sort?: AgentSort;
+  itemType?: 'AGENT' | 'SKILL' | 'ALL';
   page?: number;
   pageSize?: number;
 };
@@ -48,6 +50,7 @@ export async function searchAgents(params: AgentSearchParams): Promise<AgentSear
   const priceMin = params.priceMin ?? null;
   const priceMax = params.priceMax ?? null;
   const sort: AgentSort = params.sort || 'popular';
+  const itemType = params.itemType || 'ALL';
   const page = Math.max(1, params.page || 1);
   const pageSize = Math.min(60, Math.max(1, params.pageSize || 24));
   const offset = (page - 1) * pageSize;
@@ -55,6 +58,7 @@ export async function searchAgents(params: AgentSearchParams): Promise<AgentSear
   const baseWhere: Prisma.AgentWhereInput = {
     status: 'PUBLISHED',
     ...(category ? { category } : {}),
+    ...(itemType !== 'ALL' ? { itemType } : {}),
     ...(priceMin !== null || priceMax !== null
       ? {
           price: {
@@ -67,6 +71,7 @@ export async function searchAgents(params: AgentSearchParams): Promise<AgentSear
 
   const countsWhere: Prisma.AgentWhereInput = {
     status: 'PUBLISHED',
+    ...(itemType !== 'ALL' ? { itemType } : {}),
     ...(priceMin !== null || priceMax !== null
       ? {
           price: {
@@ -97,6 +102,7 @@ export async function searchAgents(params: AgentSearchParams): Promise<AgentSear
           displayName: true,
           description: true,
           category: true,
+          itemType: true,
           price: true,
           creatorName: true,
           version: true,
@@ -151,6 +157,7 @@ export async function searchAgents(params: AgentSearchParams): Promise<AgentSear
           displayName: true,
           description: true,
           category: true,
+          itemType: true,
           price: true,
           creatorName: true,
           version: true,
@@ -196,6 +203,16 @@ export async function searchAgents(params: AgentSearchParams): Promise<AgentSear
     filterParams.push(category);
     nextParam += 1;
   }
+  if (itemType !== 'ALL') {
+    filters.push(`AND a."itemType" = $${nextParam}::"ItemType"`);
+    filterParams.push(itemType);
+    nextParam += 1;
+  }
+  if (itemType !== 'ALL') {
+    countsFilters.push(`AND a."itemType" = $${countsNext}::"ItemType"`);
+    countsParams.push(itemType as unknown as number);
+    countsNext += 1;
+  }
   if (priceMin !== null) {
     filters.push(`AND a."price" >= $${nextParam}`);
     filterParams.push(priceMin);
@@ -222,6 +239,7 @@ export async function searchAgents(params: AgentSearchParams): Promise<AgentSear
       a."displayName",
       a."description",
       a."category",
+      a."itemType",
       a."price",
       a."creatorName",
       a."version",
@@ -282,6 +300,7 @@ export async function searchAgents(params: AgentSearchParams): Promise<AgentSear
     displayName: string;
     description: string;
     category: AgentCategory;
+    itemType: 'AGENT' | 'SKILL';
     price: unknown;
     creatorName: string;
     version: string;

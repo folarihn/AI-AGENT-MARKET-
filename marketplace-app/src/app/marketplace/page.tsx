@@ -11,6 +11,7 @@ type AgentListItem = {
   displayName: string;
   description: string;
   category: AgentCategory;
+  itemType: 'AGENT' | 'SKILL';
   price: number;
   creatorName: string;
   version: string;
@@ -58,10 +59,12 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
   const priceMin = parseNumber(parseParam(sp.priceMin));
   const priceMax = parseNumber(parseParam(sp.priceMax));
   const sort = (parseParam(sp.sort) || 'popular') as 'popular' | 'newest' | 'price';
+  const itemType = (parseParam(sp.itemType) || 'ALL') as 'AGENT' | 'SKILL' | 'ALL';
 
   const data = await searchAgents({
     q,
     category,
+    itemType,
     priceMin,
     priceMax,
     sort,
@@ -83,11 +86,12 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-        <h1 className="text-3xl font-bold text-gray-900">Browse Agents</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Browse Agents & Skills</h1>
         <MarketplaceFilters
           initial={{
             q,
             category,
+            itemType,
             priceMin: priceMin?.toString() || '',
             priceMax: priceMax?.toString() || '',
             sort,
@@ -113,6 +117,9 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-indigo-600">
                 {agent.displayName}
+                <span className="ml-2 inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                  {agent.itemType === 'SKILL' ? 'Skill' : 'Agent'}
+                </span>
               </h3>
               <p className="text-sm text-gray-500 mb-4 line-clamp-2 flex-grow">
                 {agent.description}
