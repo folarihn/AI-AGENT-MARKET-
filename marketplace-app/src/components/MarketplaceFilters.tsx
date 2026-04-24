@@ -12,7 +12,7 @@ export default function MarketplaceFilters({
   initial,
   categories,
 }: {
-  initial: { q: string; category: AgentCategory | null; priceMin: string; priceMax: string; sort: Sort };
+  initial: { q: string; category: AgentCategory | null; itemType: 'AGENT' | 'SKILL' | 'ALL'; priceMin: string; priceMax: string; sort: Sort };
   categories: Array<{ key: AgentCategory | null; label: string; count: number }>;
 }) {
   const router = useRouter();
@@ -21,21 +21,24 @@ export default function MarketplaceFilters({
 
   const [q, setQ] = useState(initial.q);
   const [category, setCategory] = useState<AgentCategory | null>(initial.category);
+  const [itemType, setItemType] = useState<'AGENT' | 'SKILL' | 'ALL'>(initial.itemType);
   const [priceMin, setPriceMin] = useState(initial.priceMin);
   const [priceMax, setPriceMax] = useState(initial.priceMax);
   const [sort, setSort] = useState<Sort>(initial.sort);
   const [showFilters, setShowFilters] = useState(false);
 
-  const push = (next: { q?: string; category?: AgentCategory | null; priceMin?: string; priceMax?: string; sort?: Sort }) => {
+  const push = (next: { q?: string; category?: AgentCategory | null; itemType?: 'AGENT' | 'SKILL' | 'ALL'; priceMin?: string; priceMax?: string; sort?: Sort }) => {
     const params = new URLSearchParams();
     const nq = next.q ?? q;
     const nc = next.category !== undefined ? next.category : category;
+    const ni = next.itemType ?? itemType;
     const pmin = next.priceMin ?? priceMin;
     const pmax = next.priceMax ?? priceMax;
     const s = next.sort ?? sort;
 
     if (nq.trim()) params.set('q', nq.trim());
     if (nc) params.set('category', nc);
+    if (ni !== 'ALL') params.set('itemType', ni);
     if (pmin.trim()) params.set('priceMin', pmin.trim());
     if (pmax.trim()) params.set('priceMax', pmax.trim());
     if (s !== 'popular') params.set('sort', s);
@@ -55,6 +58,43 @@ export default function MarketplaceFilters({
   return (
     <div className="w-full flex flex-col items-end gap-3">
       <div className="flex flex-wrap items-center justify-end gap-3 w-full">
+        {/* Item Type Dropdown */}
+        <div className="relative">
+          <select
+            value={itemType}
+            onChange={(e) => {
+              const val = e.target.value as 'AGENT' | 'SKILL' | 'ALL';
+              setItemType(val);
+              push({ itemType: val });
+            }}
+            style={{
+              padding: '10px 36px 10px 16px',
+              borderRadius: '12px',
+              border: '1px solid rgba(255, 255, 255, 0.6)',
+              background: 'rgba(255, 255, 255, 0.4)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              fontSize: '0.9375rem',
+              fontWeight: 500,
+              color: '#374151',
+              outline: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
+              transition: 'all 0.2s ease',
+              appearance: 'none',
+            }}
+            onFocus={(e) => (e.target.style.border = '1px solid var(--accent)')}
+            onBlur={(e) => (e.target.style.border = '1px solid rgba(255, 255, 255, 0.6)')}
+          >
+            <option value="ALL">All Items</option>
+            <option value="AGENT">Agents Only</option>
+            <option value="SKILL">Skills Only</option>
+          </select>
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+
         {/* Category Dropdown */}
         <div className="relative">
           <select

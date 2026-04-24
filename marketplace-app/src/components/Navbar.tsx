@@ -48,7 +48,6 @@ export function Navbar() {
             >
               Marketplace
             </Link>
-
             <Link
               href="#how-it-works"
               style={{

@@ -14,7 +14,12 @@ import {
   Globe,
 } from 'lucide-react';
 
-export default function Home() {
+type StatItemProps = {
+  value: string;
+  label: string;
+};
+
+function StatItem({ value, label }: StatItemProps) {
   return (
     <div className="flex flex-col min-h-screen hero-gradient">
       {/* ═══════════════ HERO SECTION ═══════════════ */}

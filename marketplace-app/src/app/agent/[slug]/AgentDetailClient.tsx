@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2, ShieldCheck, ShoppingCart } from 'lucide-react';
@@ -16,6 +17,7 @@ export type AgentDetail = {
   name: string;
   displayName: string;
   description: string;
+  creatorId: string;
   creatorName: string;
   version: string;
   updatedAt: string;
@@ -115,7 +117,11 @@ export default function AgentDetailClient({
               )}
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-gray-500">
-              by {agent.creatorName} • v{agent.version} • Updated {agent.updatedAt}
+              by{' '}
+              <Link href={`/u/${agent.creatorId}`} className="text-indigo-600 hover:text-indigo-700">
+                {agent.creatorName}
+              </Link>{' '}
+              • v{agent.version} • Updated {agent.updatedAt}
             </p>
             <p className="mt-2 text-sm text-gray-700">
               <span className="font-semibold">{reviewSummary.averageRating.toFixed(1)} / 5</span> ·{' '}

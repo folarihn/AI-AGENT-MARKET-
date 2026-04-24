@@ -11,6 +11,7 @@ type AgentListItem = {
   displayName: string;
   description: string;
   category: AgentCategory;
+  itemType: 'AGENT' | 'SKILL';
   price: number;
   creatorName: string;
   version: string;
@@ -58,10 +59,12 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
   const priceMin = parseNumber(parseParam(sp.priceMin));
   const priceMax = parseNumber(parseParam(sp.priceMax));
   const sort = (parseParam(sp.sort) || 'popular') as 'popular' | 'newest' | 'price';
+  const itemType = (parseParam(sp.itemType) || 'ALL') as 'AGENT' | 'SKILL' | 'ALL';
 
   const data = await searchAgents({
     q,
     category,
+    itemType,
     priceMin,
     priceMax,
     sort,
@@ -95,12 +98,13 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
         </div>
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
           <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-0.03em', whiteSpace: 'nowrap', flexShrink: 0 }}>
-            Browse Agents<span style={{ color: 'var(--accent)' }}>.</span>
+            Browse Agents & Skills<span style={{ color: 'var(--accent)' }}>.</span>
           </h1>
           <MarketplaceFilters
             initial={{
               q,
               category,
+              itemType,
               priceMin: priceMin?.toString() || '',
               priceMax: priceMax?.toString() || '',
               sort,
@@ -151,6 +155,9 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
               
               <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#111827', letterSpacing: '-0.02em', marginBottom: '8px' }}>
                 {agent.displayName}
+                <span className="ml-2 inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                  {agent.itemType === 'SKILL' ? 'Skill' : 'Agent'}
+                </span>
               </h3>
               
               <p style={{ fontSize: '0.9375rem', color: '#6b7280', lineHeight: 1.6, flexGrow: 1, marginBottom: '24px' }} className="line-clamp-2">

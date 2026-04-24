@@ -12,6 +12,7 @@ export type AgentStatus = 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED';
 
 export interface Agent {
   id: string;
+  itemType?: 'AGENT' | 'SKILL';
   slug: string;
   name: string;
   displayName: string;

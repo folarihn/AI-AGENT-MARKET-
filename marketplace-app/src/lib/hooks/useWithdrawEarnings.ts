@@ -1,0 +1,108 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
+import { config, ARC_CHAIN_ID, ARC_EXPLORER_URL } from '@/lib/wagmi';
+import type { PurchaseState } from '@/lib/arc/types';
+
+const ESCROW_ADDRESS = process.env.NEXT_PUBLIC_ESCROW_ADDRESS as string | undefined;
+
+const ESCROW_ABI = [
+  {
+    name: 'getPendingEarnings',
+    type: 'function',
+    inputs: [
+      { name: 'creator', type: 'address' },
+      { name: 'skillId', type: 'bytes32' },
+    ],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    name: 'withdrawCreatorEarnings',
+    type: 'function',
+    inputs: [{ name: 'skillId', type: 'bytes32' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    name: 'getSkillConfig',
+    type: 'function',
+    inputs: [{ name: 'skillId', type: 'bytes32' }],
+    outputs: [
+      { name: 'skillId', type: 'bytes32' },
+      { name: 'pricePerCall', type: 'uint256' },
+      { name: 'creator', type: 'address' },
+      { name: 'active', type: 'bool' },
+      { name: 'totalDeposited', type: 'uint256' },
+      { name: 'totalCreatorEarnings', type: 'uint256' },
+    ],
+    stateMutability: 'view',
+  },
+] as const;
+
+const MIN_WITHDRAWAL = 1; // $1 USDC minimum
+
+export function useWithdrawEarnings(skillId: string, creatorAddress: string) {
+  const { address, chainId, isConnected } = useAccount();
+  
+  const [step, setStep] = useState<PurchaseState>('idle');
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const { data: pendingEarnings } = useReadContract({
+    address: ESCROW_ADDRESS as `0x${string}`,
+    abi: ESCROW_ABI,
+    functionName: 'getPendingEarnings',
+    args: creatorAddress && skillId ? [creatorAddress as `0x${string}`, skillId as `0x${string}`] : undefined,
+    chainId: ARC_CHAIN_ID,
+  });
+
+  const { writeContract, data: writeData } = useWriteContract();
+
+  const { isLoading, isSuccess } = useWaitForTransactionReceipt({
+    hash: writeData,
+    chainId: ARC_CHAIN_ID,
+  });
+
+  const currentAmount = pendingEarnings ? Number(pendingEarnings) / 1_000_000 : 0;
+  const canWithdraw = currentAmount >= MIN_WITHDRAWAL;
+
+  const withdraw = useCallback(async () => {
+    if (!address || !ESCROW_ADDRESS || !canWithdraw) {
+      return;
+    }
+
+    if (chainId !== ARC_CHAIN_ID) {
+      setError('Wrong network');
+      return;
+    }
+
+    setError(null);
+    setStep('purchasing');
+
+    try {
+      await writeContract({
+        address: ESCROW_ADDRESS as `0x${string}`,
+        abi: ESCROW_ABI,
+        functionName: 'withdrawCreatorEarnings',
+        args: [skillId as `0x${string}`],
+        chainId: ARC_CHAIN_ID,
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Withdraw failed');
+      setStep('error');
+    }
+  }, [address, chainId, canWithdraw, skillId, writeContract]);
+
+  return {
+    step: isLoading ? 'purchasing' : isSuccess ? 'done' : step,
+    error,
+    txHash,
+    pendingAmount: currentAmount,
+    canWithdraw,
+    withdraw,
+    isPending: isLoading,
+    isConfirmed: isSuccess,
+  };
+}

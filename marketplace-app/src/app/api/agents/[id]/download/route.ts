@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { auth } from '@/auth';
 import { storage } from '@/lib/storage';
 import { prisma } from '@/lib/prisma';
+import { checkNFTOwnership } from '@/lib/arc/license';
 
 export async function GET(
   request: NextRequest,
@@ -21,21 +22,24 @@ export async function GET(
     return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
   }
 
-  // Check for license if not free (assuming all agents have a price for now, or check price)
   const isFree = agent.price === 0;
   
   if (!isFree) {
-    const license = await db.licenses.check(session.user.id, agentId);
+    let hasNFTLicense = false;
+    const walletAddress = (session.user as { walletAddress?: string }).walletAddress;
     
-    // Also check if user is the creator (creators can download their own agents)
+    if (walletAddress) {
+      hasNFTLicense = await checkNFTOwnership(walletAddress, agentId);
+    }
+    
+    const dbLicense = await db.licenses.check(session.user.id, agentId);
     const isCreator = agent.creatorId === session.user.id;
 
-    if (!license && !isCreator) {
+    if (!hasNFTLicense && !dbLicense && !isCreator) {
       return NextResponse.json({ error: 'Payment required' }, { status: 403 });
     }
   }
 
-  // Increment download count
   await db.agents.update(agentId, { downloads: agent.downloads + 1 });
 
   await prisma.auditLog.create({
