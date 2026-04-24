@@ -20,14 +20,36 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <AppProviders>
-          <div className="min-h-screen bg-gray-50 flex flex-col">
+          <div className="min-h-screen flex flex-col" style={{ background: 'transparent' }}>
             <Navbar />
             <main className="flex-grow">
               {children}
             </main>
-            <footer className="bg-white border-t border-gray-200 py-8">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-500">
-                <p>&copy; 2026 AI Agent Marketplace. All rights reserved.</p>
+            <footer className="footer-glass" style={{ padding: '32px 24px' }}>
+              <div
+                style={{
+                  maxWidth: '1100px',
+                  margin: '0 auto',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: '16px',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '1rem',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    letterSpacing: '-0.02em',
+                  }}
+                >
+                  AgentMarket<span style={{ color: '#c4b5fd' }}>.</span>
+                </span>
+                <p style={{ fontSize: '0.8125rem', color: 'rgba(255, 255, 255, 0.7)', margin: 0 }}>
+                  &copy; 2026 AI Agent Marketplace. All rights reserved.
+                </p>
               </div>
             </footer>
           </div>

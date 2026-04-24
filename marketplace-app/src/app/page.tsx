@@ -1,120 +1,269 @@
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { ShieldCheck, Download, Play, Search, Code, FileText, Database } from 'lucide-react';
+import {
+  ShieldCheck,
+  Search,
+  Download,
+  Play,
+  Code,
+  FileText,
+  Database,
+  ArrowRight,
+  Sparkles,
+  Zap,
+  Lock,
+  Globe,
+} from 'lucide-react';
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Hero Section */}
-      <section className="bg-indigo-700 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl font-extrabold sm:text-5xl md:text-6xl">
-            Safe, Verified AI Agents for your Workflow
+    <div className="flex flex-col min-h-screen hero-gradient">
+      {/* ═══════════════ HERO SECTION ═══════════════ */}
+      <section style={{ paddingTop: '160px', paddingBottom: '100px' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 24px', textAlign: 'center', position: 'relative' }}>
+
+
+
+          {/* Trust badge */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+            <div className="trust-badge">
+              <ShieldCheck size={14} style={{ color: 'var(--accent)' }} />
+              <span>100% Malware Scanned &amp; Verified</span>
+            </div>
+          </div>
+
+          {/* Headline */}
+          <h1
+            className="hero-headline"
+            style={{
+              fontSize: '4.5rem',
+              fontWeight: 400,
+              letterSpacing: '-0.02em',
+              lineHeight: 1.1,
+              color: '#2c3e50',
+              marginBottom: '16px',
+            }}
+          >
+            Safe, Verified <span style={{ color: '#6a5acd' }}>AI Agents</span>
+            <br />
+            for your Workflow<span style={{ color: '#6a5acd' }}>.</span>
           </h1>
-          <p className="mt-6 text-xl text-indigo-100 max-w-3xl mx-auto">
-            Discover, buy, and install standardized AI agents. All agents are manually reviewed and security scanned for your safety.
+
+          {/* Subheadline */}
+          <p
+            style={{
+              fontSize: '1.25rem',
+              color: '#7f8c8d',
+              fontWeight: 300,
+              maxWidth: '600px',
+              margin: '0 auto 40px',
+              lineHeight: 1.5,
+            }}
+          >
+            Discover, buy, and install standardized AI agents.
           </p>
-          <div className="mt-10 flex justify-center gap-4">
-            <Link href="/marketplace">
-              <Button size="lg" className="bg-white text-indigo-700 hover:bg-indigo-50">
-                Browse Agents
-              </Button>
+
+          {/* CTA Buttons */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            <Link href="/marketplace" className="btn-primary">
+              Browse Agents
+              <span className="btn-icon">
+                <ArrowRight size={14} />
+              </span>
             </Link>
-            <Link href="/dashboard/creator">
-              <Button size="lg" variant="outline" className="text-white border-white hover:bg-indigo-600">
-                Submit an Agent
-              </Button>
+            <Link href="/dashboard/creator" className="btn-secondary">
+              Submit an Agent
+              <span className="btn-icon">
+                <Code size={14} />
+              </span>
             </Link>
-          </div>
-          <div className="mt-8 flex justify-center items-center space-x-2 text-sm text-indigo-200">
-            <ShieldCheck className="h-5 w-5" />
-            <span>100% Malware Scanned & Verified</span>
           </div>
         </div>
       </section>
 
-      {/* Featured Categories */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">
-            Explore Categories
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="p-6 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-lg transition-shadow">
-              <div className="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
-                <Code className="h-6 w-6 text-indigo-600" />
+      {/* ═══════════════ CATEGORIES — TIMELINE CARDS ═══════════════ */}
+      <section id="how-it-works" style={{ padding: '0 24px 80px', maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
+        <div className="timeline-container" style={{ flexWrap: 'wrap' }}>
+          {/* Left panel — timeline */}
+          <div className="timeline-left" style={{ minWidth: '300px', flex: '1.2' }}>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '24px', color: '#111827', letterSpacing: '-0.02em' }}>
+              How it Works
+            </h3>
+            {/* Step 1 */}
+            <div className="timeline-item">
+              <div className="timeline-dot timeline-dot-blue">
+                <Search size={18} />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Developer Tools</h3>
-              <p className="text-gray-600 mb-4">
-                Code review bots, documentation generators, and test architects.
-              </p>
-              <Link href="/marketplace?category=dev-tools" className="text-indigo-600 font-medium hover:underline">
-                Browse Dev Tools &rarr;
-              </Link>
+              <div className="timeline-content" style={{ flex: 1 }}>
+                <h4>1. Discover</h4>
+                <p>Find the perfect agent for your task. Read reviews and verify permissions.</p>
+              </div>
             </div>
-            <div className="p-6 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-lg transition-shadow">
-              <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                <FileText className="h-6 w-6 text-green-600" />
+
+            {/* Step 2 */}
+            <div className="timeline-item">
+              <div className="timeline-dot timeline-dot-green">
+                <Download size={18} />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Content Creation</h3>
-              <p className="text-gray-600 mb-4">
-                SEO writers, social media repurposing, and ad copy generators.
-              </p>
-              <Link href="/marketplace?category=content" className="text-indigo-600 font-medium hover:underline">
-                Browse Content &rarr;
-              </Link>
+              <div className="timeline-content" style={{ flex: 1 }}>
+                <h4>2. Download</h4>
+                <p>Get the standardized agent package. Secure and signed.</p>
+              </div>
             </div>
-            <div className="p-6 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-lg transition-shadow">
-              <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <Database className="h-6 w-6 text-blue-600" />
+
+            {/* Step 3 */}
+            <div className="timeline-item">
+              <div className="timeline-dot timeline-dot-purple">
+                <Play size={18} />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Data & Research</h3>
-              <p className="text-gray-600 mb-4">
-                Competitor monitoring, financial summarizers, and lead enrichment.
-              </p>
-              <Link href="/marketplace?category=data" className="text-indigo-600 font-medium hover:underline">
-                Browse Data &rarr;
-              </Link>
+              <div className="timeline-content" style={{ flex: 1 }}>
+                <h4>3. Run Locally</h4>
+                <p>Install and run on your machine. You keep control of your data.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Right panel — feature showcase card */}
+          <div
+            style={{
+              flex: '0.8',
+              minWidth: '280px',
+              background: 'linear-gradient(145deg, #1e1b4b, #312e81)',
+              borderRadius: '24px',
+              padding: '28px',
+              color: 'white',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              boxShadow: '0 20px 60px rgba(30, 27, 75, 0.25)',
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginBottom: '20px',
+                }}
+              >
+                <span style={{ fontSize: '1.0625rem', fontWeight: 700 }}>
+                  Backy's Spotlight
+                </span>
+              </div>
+
+              <div
+                style={{
+                  width: '100%',
+                  height: '180px',
+                  marginBottom: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'relative',
+                }}
+              >
+                <img
+                  src="/spotlight.png"
+                  alt="Backy's Spotlight"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%)',
+                    maskImage: 'linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%)',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '16px' }}>
+                <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>from</span>
+                <span style={{ fontSize: '1.5rem', fontWeight: 800 }}>$4.99</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 14px',
+                  background: 'rgba(255,255,255,0.08)',
+                  borderRadius: '12px',
+                }}
+              >
+                <ShieldCheck size={16} style={{ opacity: 0.7 }} />
+                <span style={{ fontSize: '0.8125rem', opacity: 0.85 }}>Security Verified</span>
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 14px',
+                  background: 'rgba(255,255,255,0.08)',
+                  borderRadius: '12px',
+                }}
+              >
+                <Download size={16} style={{ opacity: 0.7 }} />
+                <span style={{ fontSize: '0.8125rem', opacity: 0.85 }}>Instant Download</span>
+              </div>
             </div>
           </div>
         </div>
+
+
       </section>
 
-      {/* How it Works */}
-      <section className="py-16 bg-gray-50 border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">
-            How it Works
+
+
+      {/* ═══════════════ FINAL CTA ═══════════════ */}
+      <section
+        style={{
+          padding: '64px 24px 100px',
+          textAlign: 'center',
+        }}
+      >
+        <div
+          style={{
+            maxWidth: '640px',
+            margin: '0 auto',
+            padding: '56px 40px',
+            background: 'rgba(255,255,255,0.5)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid rgba(255,255,255,0.5)',
+            borderRadius: '28px',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.04)',
+          }}
+        >
+          <h2
+            style={{
+              fontSize: '2rem',
+              fontWeight: 800,
+              color: '#111827',
+              letterSpacing: '-0.025em',
+              marginBottom: '12px',
+            }}
+          >
+            Ready to get started<span style={{ color: '#4f46e5' }}>?</span>
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <div>
-              <div className="mx-auto h-16 w-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
-                <Search className="h-8 w-8 text-gray-600" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900">1. Discover</h3>
-              <p className="mt-2 text-gray-600">
-                Find the perfect agent for your task. Read reviews and verify permissions.
-              </p>
-            </div>
-            <div>
-              <div className="mx-auto h-16 w-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
-                <Download className="h-8 w-8 text-gray-600" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900">2. Download</h3>
-              <p className="mt-2 text-gray-600">
-                Get the standardized agent package. Secure and signed.
-              </p>
-            </div>
-            <div>
-              <div className="mx-auto h-16 w-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
-                <Play className="h-8 w-8 text-gray-600" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900">3. Run Locally</h3>
-              <p className="mt-2 text-gray-600">
-                Install and run on your machine. You keep control of your data.
-              </p>
-            </div>
-          </div>
+          <p
+            style={{
+              fontSize: '1rem',
+              color: '#6b7280',
+              marginBottom: '32px',
+              lineHeight: 1.6,
+            }}
+          >
+            Join creators and teams building with verified AI agents today.
+          </p>
+          <Link href="/marketplace" className="btn-primary">
+            Browse the Marketplace
+            <span className="btn-icon">
+              <ArrowRight size={14} />
+            </span>
+          </Link>
         </div>
       </section>
     </div>

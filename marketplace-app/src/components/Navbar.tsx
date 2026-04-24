@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Menu, X, User as UserIcon } from 'lucide-react';
+import { Menu, X, User as UserIcon, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 
@@ -13,137 +12,314 @@ export function Navbar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  if (pathname === '/marketplace') return null;
+
   const isActive = (path: string) => pathname === path;
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex">
-            <Link href="/" className="flex-shrink-0 flex items-center">
-              <span className="text-xl font-bold text-indigo-600">AgentMarket</span>
-            </Link>
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <Link
-                href="/marketplace"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive('/marketplace')
-                    ? 'border-indigo-500 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                }`}
-              >
-                Browse Agents
-              </Link>
-              {user?.role === 'CREATOR' && (
-                <Link
-                  href="/dashboard/creator"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                    isActive('/dashboard/creator')
-                      ? 'border-indigo-500 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  }`}
-                >
-                  Creator Dashboard
-                </Link>
-              )}
-              {user?.role === 'ADMIN' && (
-                <Link
-                  href="/dashboard/admin"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                    isActive('/dashboard/admin')
-                      ? 'border-indigo-500 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  }`}
-                >
-                  Admin Dashboard
-                </Link>
-              )}
-            </div>
-          </div>
-          <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
-            {user ? (
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-700">
-                  {user.name} ({user.role})
-                </span>
-                <Button onClick={() => signOut({ callbackUrl: '/marketplace' })} variant="ghost">
-                  Logout
-                </Button>
-              </div>
-            ) : (
-              <div className="flex space-x-4">
-                <Link href="/login">
-                  <Button variant="ghost">Log in</Button>
-                </Link>
-              </div>
-            )}
-          </div>
-          <div className="-mr-2 flex items-center sm:hidden">
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+    <nav className="fixed top-0 left-0 right-0 z-50 px-4 pt-4">
+      <div className="max-w-6xl mx-auto">
+        <div className="glass-nav px-6 py-2 flex items-center justify-between">
+          {/* Brand */}
+          <Link href="/" className="flex items-center gap-2 no-underline">
+            <span
+              style={{
+                fontSize: '1.25rem',
+                fontWeight: 800,
+                letterSpacing: '-0.03em',
+                color: '#111827',
+              }}
             >
-              <span className="sr-only">Open main menu</span>
-              {isMobileMenuOpen ? (
-                <X className="block h-6 w-6" aria-hidden="true" />
-              ) : (
-                <Menu className="block h-6 w-6" aria-hidden="true" />
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
+              AgentMarket<span style={{ color: '#6a5acd' }}>.</span>
+            </span>
+          </Link>
 
-      {isMobileMenuOpen && (
-        <div className="sm:hidden">
-          <div className="pt-2 pb-3 space-y-1">
+          {/* Desktop Nav Links */}
+          <div className="hidden sm:flex items-center" style={{ gap: '28px' }}>
             <Link
               href="/marketplace"
-              className="block pl-3 pr-4 py-2 border-l-4 border-indigo-500 text-base font-medium text-indigo-700 bg-indigo-50"
+              style={{
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                color: '#4b5563',
+                textDecoration: 'none',
+                transition: 'color 0.2s',
+              }}
             >
-              Browse Agents
+              Marketplace
             </Link>
+
+            <Link
+              href="#how-it-works"
+              style={{
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                color: '#4b5563',
+                textDecoration: 'none',
+                transition: 'color 0.2s',
+              }}
+            >
+              How it Works
+            </Link>
+
             {user?.role === 'CREATOR' && (
               <Link
                 href="/dashboard/creator"
-                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800"
+                style={{
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  color: '#4b5563',
+                  textDecoration: 'none',
+                  transition: 'color 0.2s',
+                }}
               >
                 Creator Dashboard
               </Link>
             )}
-             {user?.role === 'ADMIN' && (
+
+            {user?.role === 'ADMIN' && (
               <Link
                 href="/dashboard/admin"
-                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800"
+                style={{
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  color: '#4b5563',
+                  textDecoration: 'none',
+                  transition: 'color 0.2s',
+                }}
               >
                 Admin Dashboard
               </Link>
             )}
           </div>
-          <div className="pt-4 pb-4 border-t border-gray-200">
+
+          {/* Desktop Auth */}
+          <div className="hidden sm:flex items-center" style={{ gap: '12px' }}>
             {user ? (
-               <div className="flex items-center px-4">
-                  <div className="flex-shrink-0">
-                    <UserIcon className="h-10 w-10 rounded-full bg-gray-100 p-2 text-gray-600" />
+              <>
+                <span
+                  style={{
+                    fontSize: '0.875rem',
+                    color: '#4b5563',
+                    fontWeight: 500,
+                  }}
+                >
+                  {user.name}
+                </span>
+                <button
+                  onClick={() => signOut({ callbackUrl: '/marketplace' })}
+                  style={{
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    color: '#4b5563',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    transition: 'background 0.2s',
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = 'rgba(0,0,0,0.04)')
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = 'none')
+                  }
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/marketplace"
+                  style={{
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    color: '#fff',
+                    textDecoration: 'none',
+                    padding: '8px 20px',
+                    borderRadius: '999px',
+                    background: 'var(--accent)',
+                    transition: 'all 0.2s',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Browse Agents
+                </Link>
+              </>
+            )}
+
+            {/* Hamburger (shown only on mobile but placed here for alignment) */}
+          </div>
+
+          {/* Mobile toggle */}
+          <button
+            className="sm:hidden"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '4px',
+              color: '#374151',
+            }}
+          >
+            <span className="sr-only">Open main menu</span>
+            {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div
+            className="sm:hidden mt-2"
+            style={{
+              background: 'rgba(255,255,255,0.85)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid rgba(255,255,255,0.5)',
+              borderRadius: '16px',
+              padding: '16px',
+              boxShadow: '0 4px 30px rgba(0,0,0,0.06)',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <Link
+                href="/marketplace"
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  fontSize: '0.9375rem',
+                  fontWeight: 500,
+                  color: '#374151',
+                  textDecoration: 'none',
+                }}
+              >
+                Marketplace
+              </Link>
+
+              <Link
+                href="#how-it-works"
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  fontSize: '0.9375rem',
+                  fontWeight: 500,
+                  color: '#374151',
+                  textDecoration: 'none',
+                }}
+              >
+                How it Works
+              </Link>
+
+              {user?.role === 'CREATOR' && (
+                <Link
+                  href="/dashboard/creator"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    fontSize: '0.9375rem',
+                    fontWeight: 500,
+                    color: '#374151',
+                    textDecoration: 'none',
+                  }}
+                >
+                  Creator Dashboard
+                </Link>
+              )}
+
+              {user?.role === 'ADMIN' && (
+                <Link
+                  href="/dashboard/admin"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    fontSize: '0.9375rem',
+                    fontWeight: 500,
+                    color: '#374151',
+                    textDecoration: 'none',
+                  }}
+                >
+                  Admin Dashboard
+                </Link>
+              )}
+            </div>
+
+            <div
+              style={{
+                paddingTop: '8px',
+              }}
+            >
+              {user ? (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '8px 14px',
+                  }}
+                >
+                  <UserIcon
+                    size={32}
+                    style={{
+                      padding: '6px',
+                      background: '#f3f4f6',
+                      borderRadius: '50%',
+                      color: '#6b7280',
+                    }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>
+                      {user.name}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                      {user.email}
+                    </div>
                   </div>
-                  <div className="ml-3">
-                    <div className="text-base font-medium text-gray-800">{user.name}</div>
-                    <div className="text-sm font-medium text-gray-500">{user.email}</div>
-                  </div>
-                  <button onClick={() => signOut({ callbackUrl: '/marketplace' })} className="ml-auto bg-white flex-shrink-0 p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                  <button
+                    onClick={() => signOut({ callbackUrl: '/marketplace' })}
+                    style={{
+                      fontSize: '0.8125rem',
+                      fontWeight: 500,
+                      color: '#6b7280',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
                     Logout
                   </button>
                 </div>
-            ) : (
-               <div className="mt-3 space-y-1">
-                  <Link href="/login" className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100">
-                    Log in
+              ) : (
+                <div style={{ display: 'flex', gap: '8px', padding: '4px 14px' }}>
+                  <Link
+                    href="/marketplace"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    style={{
+                      flex: 1,
+                      textAlign: 'center',
+                      padding: '10px',
+                      borderRadius: '10px',
+                      fontSize: '0.875rem',
+                      fontWeight: 600,
+                      color: '#fff',
+                      background: 'var(--accent)',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    Browse Agents
                   </Link>
                 </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </nav>
   );
 }

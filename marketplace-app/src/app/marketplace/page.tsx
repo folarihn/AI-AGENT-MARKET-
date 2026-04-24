@@ -81,50 +81,89 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-        <h1 className="text-3xl font-bold text-gray-900">Browse Agents</h1>
-        <MarketplaceFilters
-          initial={{
-            q,
-            category,
-            priceMin: priceMin?.toString() || '',
-            priceMax: priceMax?.toString() || '',
-            sort,
-          }}
-          categories={categories}
-        />
-      </div>
+    <div className="hero-gradient min-h-screen pt-8 pb-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div style={{ marginBottom: '16px' }}>
+          <Link 
+            href="/" 
+            className="inline-flex items-center gap-2 text-sm font-medium transition-colors group" 
+            style={{ color: '#6b7280', textDecoration: 'none' }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:-translate-x-1 transition-transform" style={{ color: 'var(--accent)' }}><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+            <span className="group-hover:text-gray-900 transition-colors">Back to Home</span>
+          </Link>
+        </div>
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-0.03em', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            Browse Agents<span style={{ color: 'var(--accent)' }}>.</span>
+          </h1>
+          <MarketplaceFilters
+            initial={{
+              q,
+              category,
+              priceMin: priceMin?.toString() || '',
+              priceMax: priceMax?.toString() || '',
+              sort,
+            }}
+            categories={categories}
+          />
+        </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         {data.items.map((agent: AgentListItem) => (
-          <Link href={`/agent/${agent.slug}`} key={agent.id} className="group">
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-6 h-full flex flex-col">
-              <div className="flex justify-between items-start mb-4">
-                <div className="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center text-xl font-bold text-indigo-700">
+          <Link href={`/agent/${agent.slug}`} key={agent.id} className="no-underline">
+            <div
+              className="h-full flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group"
+              style={{
+                background: 'rgba(255, 255, 255, 0.6)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                borderRadius: '24px',
+                border: '1px solid rgba(255, 255, 255, 0.5)',
+                padding: '28px',
+                boxShadow: '0 4px 30px rgba(0, 0, 0, 0.04)',
+              }}
+            >
+              <div className="flex justify-between items-start mb-6">
+                <div
+                  style={{
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: '16px',
+                    background: 'var(--pill-purple-bg)',
+                    color: 'var(--accent)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.25rem',
+                    fontWeight: 800,
+                  }}
+                >
                   {agent.displayName.charAt(0)}
                 </div>
                 {agent.verified && (
-                  <div className="flex items-center text-green-600 bg-green-50 px-2 py-1 rounded-full text-xs font-medium">
-                    <ShieldCheck className="h-3 w-3 mr-1" />
+                  <span className="pill-badge pill-purple" style={{ fontSize: '0.75rem', padding: '6px 12px' }}>
+                    <ShieldCheck size={14} style={{ marginRight: '4px' }} />
                     Verified
-                  </div>
+                  </span>
                 )}
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-indigo-600">
+              
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#111827', letterSpacing: '-0.02em', marginBottom: '8px' }}>
                 {agent.displayName}
               </h3>
-              <p className="text-sm text-gray-500 mb-4 line-clamp-2 flex-grow">
+              
+              <p style={{ fontSize: '0.9375rem', color: '#6b7280', lineHeight: 1.6, flexGrow: 1, marginBottom: '24px' }} className="line-clamp-2">
                 {agent.description}
               </p>
-              <div className="flex items-center justify-between text-sm text-gray-500 mt-auto pt-4 border-t border-gray-100">
-                <div className="flex items-center">
-                  <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                  <span className="font-medium text-gray-900">{agent.rating}</span>
-                  <span className="mx-1">·</span>
-                  <span>{agent.reviewsCount} reviews</span>
+              
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '20px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', color: '#4b5563', fontWeight: 500 }}>
+                  <Star size={16} fill="#f59e0b" color="#f59e0b" />
+                  <span style={{ color: '#111827', fontWeight: 700 }}>{agent.rating}</span>
+                  <span style={{ color: '#9ca3af' }}>({agent.reviewsCount})</span>
                 </div>
-                <div className="font-bold text-gray-900">
+                <div style={{ fontSize: '1.125rem', fontWeight: 800, color: '#111827' }}>
                   {agent.price === 0 ? 'Free' : `$${agent.price}`}
                 </div>
               </div>
@@ -138,6 +177,7 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
           <p className="text-gray-500 text-lg">No agents found matching your criteria.</p>
         </div>
       )}
+      </div>
     </div>
   );
 }
