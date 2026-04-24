@@ -90,8 +90,8 @@ export default function Home() {
             </h3>
             {/* Step 1 */}
             <div className="timeline-item">
-              <div className="timeline-dot timeline-dot-blue">
-                <Search size={18} />
+              <div className="timeline-dot" style={{ background: '#ffffff' }}>
+                <img src="/loupe.png" alt="Discover" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
               </div>
               <div className="timeline-content" style={{ flex: 1 }}>
                 <h4>1. Discover</h4>
@@ -101,8 +101,8 @@ export default function Home() {
 
             {/* Step 2 */}
             <div className="timeline-item">
-              <div className="timeline-dot timeline-dot-green">
-                <Download size={18} />
+              <div className="timeline-dot" style={{ background: '#ffffff' }}>
+                <img src="/download_icon.png" alt="Download" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
               </div>
               <div className="timeline-content" style={{ flex: 1 }}>
                 <h4>2. Download</h4>
@@ -112,8 +112,8 @@ export default function Home() {
 
             {/* Step 3 */}
             <div className="timeline-item">
-              <div className="timeline-dot timeline-dot-purple">
-                <Play size={18} />
+              <div className="timeline-dot" style={{ background: '#ffffff' }}>
+                <img src="/play_icon.png" alt="Run Locally" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
               </div>
               <div className="timeline-content" style={{ flex: 1 }}>
                 <h4>3. Run Locally</h4>
@@ -216,6 +216,69 @@ export default function Home() {
       </section>
 
 
+
+      {/* ═══════════════ SKILLS VS AGENTS SECTION ═══════════════ */}
+      <section style={{ padding: '0 24px 80px', maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
+        <div
+          style={{
+            background: 'rgba(255, 255, 255, 0.4)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid rgba(255, 255, 255, 0.6)',
+            borderRadius: '24px',
+            padding: '48px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '32px'
+          }}
+        >
+          <div style={{ textAlign: 'center' }}>
+            <h2 style={{ fontSize: '2rem', fontWeight: 800, color: '#111827', letterSpacing: '-0.02em', marginBottom: '8px' }}>
+              Skills are the building blocks<span style={{ color: 'var(--accent)' }}>.</span> Agents are what you ship<span style={{ color: 'var(--accent)' }}>.</span>
+            </h2>
+            <p style={{ color: '#6b7280', fontSize: '1.125rem' }}>
+              Discover exactly what you need, whether it's a full workflow or a modular capability.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+            {/* Skills Card */}
+            <div style={{ flex: '1', minWidth: '300px', background: 'rgba(255,255,255,0.7)', borderRadius: '16px', padding: '32px', border: '1px solid rgba(255,255,255,0.8)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '64px', height: '64px', background: 'rgba(106, 90, 205, 0.05)', borderRadius: '16px', border: '1px solid rgba(106, 90, 205, 0.1)' }}>
+                  <img src="/creative-thinking.png" alt="Skills" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+                </div>
+                <h3 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#111827', letterSpacing: '-0.02em' }}>Skills</h3>
+              </div>
+              <p style={{ color: '#4b5563', lineHeight: 1.6, marginBottom: '24px', fontSize: '1.0625rem' }}>
+                Plug-and-play tools for any agent, search, memory, code, vectors.
+                <br />
+                Reuse them. Pay per use or once. Build faster.
+              </p>
+              <Link href="/marketplace?itemType=SKILL" style={{ color: '#6a5acd', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', fontSize: '1.0625rem' }}>
+                Browse Skills <ArrowRight size={18} />
+              </Link>
+            </div>
+
+            {/* Agents Card */}
+            <div style={{ flex: '1', minWidth: '300px', background: 'rgba(255,255,255,0.7)', borderRadius: '16px', padding: '32px', border: '1px solid rgba(255,255,255,0.8)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '64px', height: '64px', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
+                  <img src="/agents.png" alt="Agents" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+                </div>
+                <h3 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#111827', letterSpacing: '-0.02em' }}>Agents</h3>
+              </div>
+              <p style={{ color: '#4b5563', lineHeight: 1.6, marginBottom: '24px', fontSize: '1.0625rem' }}>
+                Full workflows built from skills. Scanned, reviewed, and approved. Ready to run locally with license enforcement.
+              </p>
+              <Link href="/marketplace?itemType=AGENT" style={{ color: '#10b981', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', fontSize: '1.0625rem' }}>
+                Browse Agents <ArrowRight size={18} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ═══════════════ FINAL CTA ═══════════════ */}
       <section
