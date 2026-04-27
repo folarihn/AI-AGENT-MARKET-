@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { ARC_CHAIN_ID, USDC_ADDRESS } from '@/lib/arc/config';
 import type { PurchaseState } from '@/lib/arc/types';
@@ -62,6 +62,7 @@ export function useWithdrawEarnings(skillId: string, creatorAddress: string) {
 
     setError(null);
     setStep('purchasing');
+    setTxHash(null);
 
     try {
       writeContract({
@@ -75,6 +76,19 @@ export function useWithdrawEarnings(skillId: string, creatorAddress: string) {
       handleError(e, 'Withdraw failed');
     }
   }, [address, chainId, canWithdraw, skillId, writeContract]);
+
+  useEffect(() => {
+    if (writeData && !txHash) {
+      setTxHash(writeData);
+    }
+  }, [writeData, txHash]);
+
+  useEffect(() => {
+    if (isSuccess && writeData && !txHash) {
+      setTxHash(writeData);
+      setStep('done');
+    }
+  }, [isSuccess, writeData, txHash]);
 
   const finalStep: PurchaseState = isSuccess ? 'done' : isLoading ? 'transacting' : step;
 

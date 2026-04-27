@@ -30,6 +30,7 @@ export interface Agent {
   rating: number;
   reviewsCount: number;
   readmeText?: string;
+  registrationTxHash?: string;
   permissions: {
     network: boolean;
     filesystem: boolean;

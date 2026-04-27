@@ -124,6 +124,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async signIn({ user }) {
+      if (!user?.email) return false;
+      
+      const dbUser = await prisma.user.findUnique({ 
+        where: { email: user.email } 
+      });
+      
+      if (dbUser?.suspended) {
+        return false;
+      }
+      
       const adminEmails = (process.env.ADMIN_EMAILS || '')
         .split(',')
         .map((s) => s.trim().toLowerCase())
@@ -148,11 +158,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (dbUser) {
           (token as unknown as { role?: AppUserRole }).role = dbUser.role;
           (token as unknown as { walletAddress?: string }).walletAddress = dbUser.walletAddress || undefined;
+          (token as unknown as { suspended?: boolean }).suspended = dbUser.suspended || false;
         }
       }
       return token;
     },
     async session({ session, token }) {
+      if (!token?.sub) {
+        return null;
+      }
+      
+      const suspended = (token as unknown as { suspended?: boolean }).suspended;
+      if (suspended) {
+        return null;
+      }
+      
       if (session.user && token.sub) {
         session.user.id = token.sub;
         const role = (token as unknown as { role?: AppUserRole }).role ?? 'BUYER';

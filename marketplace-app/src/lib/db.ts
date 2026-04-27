@@ -108,6 +108,7 @@ function prismaAgentToApp(agent: PrismaAgent & { itemType?: string }): Agent {
     rating: agent.rating,
     reviewsCount: agent.reviewsCount,
     readmeText: agent.readmeText ?? undefined,
+    registrationTxHash: agent.registrationTxHash ?? undefined,
     permissions: {
       network: agent.permissionsNetwork,
       filesystem: agent.permissionsFilesystem,
@@ -395,5 +396,26 @@ export const db = {
             createdAt: toIsoTimestamp(updated.createdAt),
           };
       }
+  },
+  skillUsage: {
+    getBySkill: async (skillId: string) => {
+      const usages = await prisma.skillUsage.aggregate({
+        where: { skillId },
+        _sum: { callCount: true, usdcSpent: true },
+      });
+      return {
+        totalCalls: usages._sum.callCount || 0,
+        totalUSDC: decimalToNumber(usages._sum.usdcSpent || 0),
+      };
+    },
+  },
+  usagePayment: {
+    getBySkill: async (skillId: string) => {
+      const payments = await prisma.usagePayment.aggregate({
+        where: { skillId, status: 'COMPLETED' },
+        _sum: { totalUSDC: true },
+      });
+      return decimalToNumber(payments._sum.totalUSDC || 0);
+    },
   }
 };

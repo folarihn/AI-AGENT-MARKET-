@@ -83,6 +83,7 @@ model User {
   emailVerified DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  suspended    Boolean   @default(false)
 
   accounts      Account[]
   sessions      Session[]
@@ -169,6 +170,7 @@ model Agent {
   runtime             String?
   inputs              Json?
   outputs             Json?
+  registrationTxHash  String?
 
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt

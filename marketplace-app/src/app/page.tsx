@@ -137,9 +137,9 @@ export default function Home() {
               <Link href="/dashboard/creator" className="text-[rgba(240,237,232,0.7)] hover:text-[#f0ede8]">
                 For creators
               </Link>
-              <Link href="/docs" className="text-[rgba(240,237,232,0.7)] hover:text-[#f0ede8]">
+              <a href="https://github.com/your-repo/blob/main/README.md" target="_blank" rel="noopener noreferrer" className="text-[rgba(240,237,232,0.7)] hover:text-[#f0ede8]">
                 Docs
-              </Link>
+              </a>
             </nav>
           </div>
 
@@ -203,11 +203,10 @@ export default function Home() {
             <span> · USDC native · Sub-second settlement</span>
           </div>
           <div className="mt-3 flex items-center gap-2 text-[12px] text-[rgba(240,237,232,0.35)]">
-            <span>3 asset types · </span>
+            <span>2 asset types · </span>
             <Link href="/marketplace?itemType=AGENT" className="hover:underline text-[rgba(240,237,232,0.7)]">Agents</Link>
             <span> · </span>
             <Link href="/marketplace?itemType=SKILL" className="hover:underline text-[rgba(240,237,232,0.7)]">Skills</Link>
-            <span> · Webhooks</span>
           </div>
         </div>
       </section>
@@ -334,12 +333,14 @@ export default function Home() {
             >
               Submit an agent
             </Link>
-            <Link
-              href="/docs"
+            <a
+              href="https://github.com/your-repo/blob/main/README.md"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[rgba(255,255,255,0.08)] px-5 text-[13px] font-medium tracking-[-0.01em] text-[#f0ede8] transition-colors hover:bg-[#111] sm:w-[180px]"
             >
               Read the docs →
-            </Link>
+            </a>
           </div>
         </div>
       </section>

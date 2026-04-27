@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npx tsc --noEmit
+
+      - run: npx prisma validate
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npx eslint src/ --ext .ts,.tsx
+
+  contracts:
+    runs-on: ubuntu-latest
+    if: hashFiles('contracts/package.json')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          working-directory: contracts
+
+      - run: npm ci
+        working-directory: contracts
+
+      - run: npx hardhat compile
+        working-directory: contracts
+
+      - run: npx hardhat test
+        working-directory: contracts

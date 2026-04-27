@@ -1,0 +1,24 @@
+name: Deploy Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: amondnet/vercel-action@v25
+        with:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment preview URL
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          echo "🎏 Preview deployed: https://${{ env.VERCEL_URL }}"
+          echo "📝 Preview URL: https://${{ env.VERCEL_URL }}" >> $GITHUB_STEP_SUMMARY

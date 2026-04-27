@@ -18,7 +18,7 @@ export default function CheckoutSuccessClient() {
           <div className="flex flex-col items-center">
             <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
             <h2 className="text-2xl font-bold text-gray-900">Purchase Successful!</h2>
-            <p className="text-gray-500 mt-2 mb-6">Your purchase is complete. Your license will be issued via webhook.</p>
+            <p className="text-gray-500 mt-2 mb-6">Your purchase is complete. Your license has been issued.</p>
             <div className="flex gap-4">
               <Button onClick={() => router.push('/marketplace')}>Back to Marketplace</Button>
               <Button variant="outline" onClick={() => router.push('/marketplace')}>

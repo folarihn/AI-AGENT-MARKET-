@@ -2,9 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, X, Eye, ShieldAlert, ShieldCheck, Loader2 } from 'lucide-react';
+import { 
+  Check, X, Eye, ShieldAlert, ShieldCheck, Loader2, PauseCircle, Users, BarChart3 
+} from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import { Prisma } from '@prisma/client';
+import { useSearchParams } from 'next/navigation';
 
 interface SkillAsset {
   id: string;
@@ -47,8 +51,11 @@ interface ScanResult {
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
+  const searchParams = useSearchParams();
+  const creatorIdFilter = searchParams.get('creatorId');
   const [assets, setAssets] = useState<SkillAsset[]>([]);
   const [scans, setScans] = useState<Record<string, ScanResult>>({});
+  const [registrationStatuses, setRegistrationStatuses] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'ALL' | 'AGENT' | 'SKILL'>('ALL');
   const [pricingFilter, setPricingFilter] = useState<'ALL' | 'FREE' | 'ONE_TIME' | 'PER_CALL'>('ALL');
@@ -61,11 +68,15 @@ export default function AdminDashboard() {
     const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch('/api/admin/queue');
+        const params = new URLSearchParams();
+        if (creatorIdFilter) params.set('creatorId', creatorIdFilter);
+        
+        const res = await fetch(`/api/admin/queue?${params}`);
         if (res.ok) {
           const data = await res.json();
           setAssets(data.assets || []);
           setScans(data.scans || {});
+          setRegistrationStatuses(data.registrationStatuses || {});
         }
       } catch (e) {
         console.error("Failed to fetch queue", e);
@@ -74,7 +85,7 @@ export default function AdminDashboard() {
     };
 
     load();
-  }, [isAdmin]);
+  }, [isAdmin, creatorIdFilter]);
 
   const filteredAssets = assets.filter((asset) => {
     if (filter !== 'ALL' && asset.status !== 'PENDING_REVIEW') return false;
@@ -83,6 +94,22 @@ export default function AdminDashboard() {
     if (filter !== 'ALL' && asset.status !== 'PENDING_REVIEW') return false;
     return true;
   });
+
+  const handleRetryEscrow = async (id: string) => {
+    if (!confirm('Retry escrow registration for this skill?')) return;
+    try {
+      const res = await fetch(`/api/admin/skills/${id}/register-escrow`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Registration successful! Tx: ${data.txHash?.slice(0, 10)}...`);
+        setRegistrationStatuses((prev) => ({ ...prev, [id]: data.txHash }));
+      } else {
+        alert(`Registration failed: ${data.error}`);
+      }
+    } catch {
+      alert('Error retrying registration');
+    }
+  };
 
   const handleReview = async (id: string, action: 'APPROVE' | 'REJECT') => {
     try {
@@ -116,7 +143,29 @@ export default function AdminDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Admin Dashboard</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+        <Link 
+          href="/dashboard/admin/users"
+          className="text-sm text-indigo-600 hover:text-indigo-800"
+        >
+          Manage Users →
+        </Link>
+      </div>
+
+      {creatorIdFilter && (
+        <div className="mb-4 p-3 bg-indigo-50 rounded-md flex items-center justify-between">
+          <span className="text-sm text-indigo-700">
+            Filtering by creator: {creatorIdFilter.slice(0, 8)}...
+          </span>
+          <Link 
+            href="/dashboard/admin"
+            className="text-sm text-indigo-600 hover:underline"
+          >
+            Clear filter
+          </Link>
+        </div>
+      )}
 
       <div className="flex gap-2 mb-6">
         {(['ALL', 'AGENT', 'SKILL'] as const).map((f) => (
@@ -230,8 +279,18 @@ export default function AdminDashboard() {
 
                     {isPerCall && (
                       <div className="bg-yellow-50 p-3 rounded-md border border-yellow-200 text-sm text-yellow-800">
-                        ⚠️ Approving this PER_CALL skill will auto-register it in the escrow contract.
-                        Price: ${pricePerCall.toFixed(3)}/call
+                        {registrationStatuses[asset.id] === 'FAILED' ? (
+                          <div className="flex items-center justify-between">
+                            <span>⚠️ Escrow registration failed - retry needed</span>
+                            <Button size="sm" variant="outline" onClick={() => handleRetryEscrow(asset.id)}>
+                              Retry Registration
+                            </Button>
+                          </div>
+                        ) : registrationStatuses[asset.id] && registrationStatuses[asset.id] !== 'none' ? (
+                          <span>✅ Escrow registered (tx: {registrationStatuses[asset.id].slice(0, 10)}...)</span>
+                        ) : (
+                          <>⚠️ Approving this PER_CALL skill will auto-register it in the escrow contract. Price: ${pricePerCall.toFixed(3)}/call</>
+                        )}
                       </div>
                     )}
 

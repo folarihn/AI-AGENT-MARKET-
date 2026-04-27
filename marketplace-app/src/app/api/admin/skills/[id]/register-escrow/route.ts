@@ -70,6 +70,11 @@ export async function POST(
 
     const txHash = await walletClient.writeContract(contractRequest);
 
+    await prisma.agent.update({
+      where: { id: skillId },
+      data: { registrationTxHash: txHash },
+    });
+
     await prisma.auditLog.create({
       data: {
         agentId: skillId,
