@@ -121,10 +121,12 @@ contract AgentiSkillEscrow is Ownable, Pausable, ReentrancyGuard {
         if (skillConfigs[skillId].skillId == bytes32(0)) revert SkillNotRegistered();
         if (!skillConfigs[skillId].active) revert SkillNotActive();
 
+        // Interaction BEFORE effects (receive funds first)
+        usdcToken.safeTransferFrom(msg.sender, address(this), amount);
+
+        // Effects after interaction (only update state after funds received)
         userBalances[skillId][msg.sender] += amount;
         skillConfigs[skillId].totalDeposited += amount;
-
-        usdcToken.safeTransferFrom(msg.sender, address(this), amount);
 
         emit Deposited(msg.sender, skillId, amount);
     }
