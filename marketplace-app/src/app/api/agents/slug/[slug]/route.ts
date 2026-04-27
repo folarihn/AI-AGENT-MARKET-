@@ -34,6 +34,10 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ slug: strin
     return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
   }
 
+  if (agent.status !== 'PUBLISHED') {
+    return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+  }
+
   const [count, avg] = await Promise.all([
     prisma.review.count({ where: { agentId: agent.id } }),
     prisma.review.aggregate({ where: { agentId: agent.id }, _avg: { rating: true } }),

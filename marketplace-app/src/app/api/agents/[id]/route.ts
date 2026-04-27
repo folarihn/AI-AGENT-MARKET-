@@ -10,16 +10,15 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
     return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
   }
 
-  const session = await auth();
+  if (agent.status !== 'PUBLISHED') {
+    return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+  }
 
-  await prisma.auditLog.create({
-    data: {
-      agentId,
-      action: 'VIEW_AGENT',
-      userId: session?.user?.id ?? null,
-      details: 'Agent viewed',
-    },
-  });
+  const session = await auth();
+  const needsAuth = agent.price > 0;
+  if (needsAuth && !session?.user) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+  }
 
   const [count, avg] = await Promise.all([
     prisma.review.count({ where: { agentId } }),

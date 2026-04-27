@@ -10,10 +10,10 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   const pageSize = 10;
   const skip = (page - 1) * pageSize;
 
-  const [items, total, agg] = await Promise.all([
+const [items, total, agg] = await Promise.all([
     prisma.review.findMany({
       where: { agentId },
-      include: { user: { select: { name: true, email: true } } },
+      include: { user: { select: { name: true } } },
       orderBy: { createdAt: 'desc' },
       skip,
       take: pageSize,
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
     prisma.review.aggregate({ where: { agentId }, _avg: { rating: true } }),
   ]);
 
-  const mapName = (name?: string | null, email?: string | null) => {
+  const mapName = (name?: string | null) => {
     const n = (name || '')?.trim();
     if (n) {
       const parts = n.split(/\s+/);
@@ -31,8 +31,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
       const last = parts[parts.length - 1];
       return `${first} ${last.charAt(0)}.`;
     }
-    const e = (email || '').split('@')[0];
-    return e ? `${e.slice(0, 1).toUpperCase()}${e.slice(1)}` : 'User';
+    return 'User';
   };
 
   return NextResponse.json({
@@ -41,7 +40,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
       rating: r.rating,
       body: r.body,
       createdAt: r.createdAt,
-      reviewerName: mapName(r.user?.name, r.user?.email),
+      reviewerName: mapName(r.user?.name),
       verifiedPurchase: true,
     })),
     page,
