@@ -162,6 +162,7 @@ interface SkillDetailClientProps {
   skill: SkillDetailProps;
   scan: ScanInfo | null;
   hasLicense: boolean;
+  escrowBalance: number;
   usage: { callCount: number; usdcSpent: number } | null;
   creatorEmailVerified: boolean;
 }
@@ -170,6 +171,7 @@ export default function SkillDetailClient({
   skill,
   scan,
   hasLicense,
+  escrowBalance,
   usage,
   creatorEmailVerified,
 }: SkillDetailClientProps) {
@@ -193,6 +195,12 @@ export default function SkillDetailClient({
       router.push('/login');
       return;
     }
+    
+    if (isPerCall && escrowBalance > 0) {
+      router.push(`/skill/${skill.slug}/call`);
+      return;
+    }
+    
     window.location.href = `/api/agents/${skill.id}/download`;
   };
 
@@ -231,6 +239,53 @@ export default function SkillDetailClient({
   const isPerCall = skill.pricingModel === 'PER_CALL';
   const isFree = skill.pricingModel === 'FREE';
   const isOneTime = skill.pricingModel === 'ONE_TIME';
+  const hasAccess = hasLicense || escrowBalance > 0;
+  const canCall = isPerCall && escrowBalance > 0;
+
+  const renderActionButton = () => {
+    if (checking) {
+      return (
+        <Button disabled>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking...
+        </Button>
+      );
+    }
+
+    if (canCall) {
+      return (
+        <Button onClick={handleDownload}>
+          <Zap className="mr-2 h-4 w-4" /> Call skill
+        </Button>
+      );
+    }
+
+    if (isFree || hasLicense) {
+      return (
+        <Button onClick={handleDownload}>
+          <Download className="mr-2 h-4 w-4" /> Add to agent
+        </Button>
+      );
+    }
+
+    if (isPerCall) {
+      return (
+        <Button onClick={handleEnablePerCall}>
+          <Zap className="mr-2 h-4 w-4" /> Enable skill — ${skill.pricePerCall?.toFixed(3) || '0'}/call
+        </Button>
+      );
+    }
+
+    return (
+      <Button onClick={handleBuy} disabled={loading}>
+        {loading ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <CreditCard className="mr-2 h-4 w-4" />
+        )}
+        Buy for ${skill.price}
+      </Button>
+    );
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -266,36 +321,24 @@ export default function SkillDetailClient({
           
           <div className="flex flex-col items-end">
             <div className="flex flex-col gap-2">
-              {checking ? (
-                <Button disabled>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking...
-                </Button>
-              ) : isFree || hasLicense ? (
-                <Button onClick={handleDownload}>
-                  <Download className="mr-2 h-4 w-4" /> Add to agent
-                </Button>
-              ) : isPerCall ? (
-                <Button onClick={handleEnablePerCall}>
-                  <Zap className="mr-2 h-4 w-4" /> Enable skill
-                </Button>
-              ) : (
-                <Button onClick={handleBuy} disabled={loading}>
-                  {loading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <CreditCard className="mr-2 h-4 w-4" />
-                  )}
-                  Buy for ${skill.price}
-                </Button>
-              )}
+              {renderActionButton()}
               
               {!user && <p className="text-xs text-gray-500 mt-1">Login required</p>}
               
-              {usage && isPerCall && (
+              {isPerCall && escrowBalance > 0 && (
                 <div className="mt-2 text-xs text-gray-500 text-right">
-                  <div>{usage.callCount} calls this month</div>
-                  <div>${usage.usdcSpent.toFixed(3)} USDC spent</div>
+                  <div>Balance: ${escrowBalance.toFixed(2)} USDC</div>
+                  {usage && (
+                    <>
+                      <div>{usage.callCount} calls this month</div>
+                      <div>${usage.usdcSpent.toFixed(3)} USDC spent</div>
+                    </>
+                  )}
                 </div>
+              )}
+              
+              {isPerCall && escrowBalance === 0 && (
+                <p className="text-xs text-gray-500 mt-1">Add USDC to enable calls</p>
               )}
             </div>
           </div>
