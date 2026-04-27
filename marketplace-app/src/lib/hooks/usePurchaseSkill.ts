@@ -3,35 +3,11 @@
 import { useState, useCallback } from 'react';
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount, useSwitchChain } from 'wagmi';
 import { toHex } from 'viem';
-import { config, ARC_CHAIN_ID } from '@/lib/wagmi';
+import { ARC_CHAIN_ID, USDC_ADDRESS, AGENTI_MARKETPLACE_ABI } from '@/lib/arc/config';
 import type { PurchaseState } from '@/lib/arc/types';
 
-const USDC_ADDRESS = '0x3600000000000000000000000000000000000000000';
 const MARKETPLACE_ADDRESS = process.env.NEXT_PUBLIC_MARKETPLACE_ADDRESS as string | undefined;
 const ESCROW_ADDRESS = process.env.NEXT_PUBLIC_ESCROW_ADDRESS as string | undefined;
-
-const USDC_ABI = [
-  {
-    name: 'approve',
-    type: 'function',
-    inputs: [
-      { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    outputs: [{ name: '', type: 'bool' }],
-    stateMutability: 'nonpayable',
-  },
-] as const;
-
-const MARKETPLACE_ABI = [
-  {
-    name: 'purchaseAgent',
-    type: 'function',
-    inputs: [{ name: 'agentId', type: 'bytes32' }],
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-] as const;
 
 export type PricingModel = 'FREE' | 'ONE_TIME' | 'PER_CALL' | undefined;
 
@@ -53,7 +29,7 @@ export interface UsePurchaseSkillResult {
 }
 
 export function usePurchaseSkill({ skillId, priceUSDC, pricingModel, skillSlug }: UsePurchaseSkillProps): UsePurchaseSkillResult {
-  const { address, chainId, isConnected } = useAccount();
+  const { address, chainId } = useAccount();
   const { switchChain } = useSwitchChain();
 
   const [state, setState] = useState<PurchaseState>('idle');
@@ -64,7 +40,7 @@ export function usePurchaseSkill({ skillId, priceUSDC, pricingModel, skillSlug }
 
   const { data: usdcBalance } = useReadContract({
     address: USDC_ADDRESS as `0x${string}`,
-    abi: USDC_ABI,
+    abi: ['function balanceOf(address _owner) view returns (uint256)'] as const,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
     chainId: ARC_CHAIN_ID,
@@ -72,18 +48,7 @@ export function usePurchaseSkill({ skillId, priceUSDC, pricingModel, skillSlug }
 
   const { data: usdcAllowance } = useReadContract({
     address: USDC_ADDRESS as `0x${string}`,
-    abi: [
-      {
-        name: 'allowance',
-        type: 'function',
-        inputs: [
-          { name: 'owner', type: 'address' },
-          { name: 'spender', type: 'address' },
-        ],
-        outputs: [{ name: '', type: 'bool' }],
-        stateMutability: 'view',
-      },
-    ],
+    abi: ['function allowance(address _owner, address _spender) view returns (uint256)'] as const,
     functionName: 'allowance',
     args: address && isPerCall && ESCROW_ADDRESS
       ? [address, ESCROW_ADDRESS]
@@ -101,12 +66,22 @@ export function usePurchaseSkill({ skillId, priceUSDC, pricingModel, skillSlug }
     chainId: ARC_CHAIN_ID,
   });
 
-  const { isLoading: isPurchasePending, isSuccess } = useWaitForTransactionReceipt({
+  const { isLoading: isPurchasePending, isSuccess: isPurchaseSuccess } = useWaitForTransactionReceipt({
     hash: purchaseData,
     chainId: ARC_CHAIN_ID,
   });
 
   const needsApproval = !isFree && (!usdcAllowance || (usdcBalance as bigint) < BigInt(priceUSDC) || (usdcAllowance as bigint) < BigInt(priceUSDC));
+
+  const handleWriteError = (e: unknown, fallbackMsg: string) => {
+    const err = e as { code?: number; message?: string };
+    if (err.code === 4001) {
+      setError('Transaction rejected by user');
+    } else {
+      setError(err.message || fallbackMsg);
+    }
+    setState('error');
+  };
 
   const purchase = useCallback(async () => {
     if (!address) {
@@ -125,7 +100,7 @@ export function usePurchaseSkill({ skillId, priceUSDC, pricingModel, skillSlug }
 
     setError(null);
 
-    if (pricingModel === 'FREE' || priceUSDC === 0) {
+    if (isFree) {
       setState('purchasing');
       try {
         const res = await fetch('/api/buyer/library', {
@@ -134,15 +109,14 @@ export function usePurchaseSkill({ skillId, priceUSDC, pricingModel, skillSlug }
           body: JSON.stringify({ skillId }),
         });
         if (!res.ok) throw new Error('Failed to claim free skill');
-        setState('success');
+        setState('done');
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Claim failed');
-        setState('error');
+        handleWriteError(e, 'Claim failed');
       }
       return;
     }
 
-    if (pricingModel === 'PER_CALL') {
+    if (isPerCall) {
       if (!ESCROW_ADDRESS) {
         setError('Escrow not configured');
         return;
@@ -162,93 +136,39 @@ export function usePurchaseSkill({ skillId, priceUSDC, pricingModel, skillSlug }
         try {
           writeApprove({
             address: USDC_ADDRESS as `0x${string}`,
-            abi: USDC_ABI,
+            abi: ['function approve(address _spender, uint256 _value) returns (bool)'] as const,
             functionName: 'approve',
             args: [MARKETPLACE_ADDRESS, toHex(BigInt(priceUSDC) * 10n ** 12n)],
             chainId: ARC_CHAIN_ID,
           });
         } catch (e) {
-          setError(e instanceof Error ? e.message : 'Approval failed');
-          setState('error');
+          handleWriteError(e, 'Approval failed');
         }
       } else {
         setState('purchasing');
         try {
           writePurchase({
             address: MARKETPLACE_ADDRESS as `0x${string}`,
-            abi: MARKETPLACE_ABI,
+            abi: AGENTI_MARKETPLACE_ABI,
             functionName: 'purchaseAgent',
             args: [toHex(BigInt(skillId))],
             chainId: ARC_CHAIN_ID,
           });
         } catch (e) {
-          setError(e instanceof Error ? e.message : 'Purchase failed');
-          setState('error');
+          handleWriteError(e, 'Purchase failed');
         }
       }
     }
-  }, [address, chainId, priceUSDC, pricingModel, skillId, skillSlug, writeApprove, writePurchase, switchChain, usdcAllowance]);
+  }, [address, chainId, priceUSDC, pricingModel, isFree, isPerCall, writeApprove, writePurchase, switchChain, usdcAllowance, skillId]);
+
+  const finalState: PurchaseState = isPurchaseSuccess ? 'done' : isPurchasePending || isApprovePending ? 'transacting' : state;
 
   return {
-    state,
+    state: finalState,
     error,
     needsApproval,
     isPerCall,
     isFree,
-    purchase,
-    reset: () => {
-      setState('idle');
-      setError(null);
-    },
-  };
-}
-
-    if (chainId !== ARC_CHAIN_ID) {
-      try {
-        await switchChain({ chainId: ARC_CHAIN_ID });
-      } catch {
-        setError('Please switch to Arc Testnet network');
-        return;
-      }
-    }
-
-    setError(null);
-
-    if ((usdcAllowance as bigint) < BigInt(priceUSDC)) {
-      setState('approving');
-      try {
-        writeApprove({
-          address: USDC_ADDRESS as `0x${string}`,
-          abi: USDC_ABI,
-          functionName: 'approve',
-          args: [MARKETPLACE_ADDRESS, toHex(BigInt(priceUSDC) * 10n ** 12n)],
-          chainId: ARC_CHAIN_ID,
-        });
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Approval failed');
-        setState('error');
-      }
-    } else {
-      setState('purchasing');
-      try {
-        writePurchase({
-          address: MARKETPLACE_ADDRESS as `0x${string}`,
-          abi: MARKETPLACE_ABI,
-          functionName: 'purchaseAgent',
-          args: [toHex(BigInt(skillId))],
-          chainId: ARC_CHAIN_ID,
-        });
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Purchase failed');
-        setState('error');
-      }
-    }
-  }, [address, chainId, priceUSDC, writeApprove, writePurchase, switchChain, usdcAllowance, skillId]);
-
-  return {
-    state,
-    error,
-    needsApproval,
     purchase,
     reset: () => {
       setState('idle');

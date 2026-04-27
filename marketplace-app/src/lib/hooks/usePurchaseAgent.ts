@@ -2,38 +2,15 @@
 
 import { useState, useCallback } from 'react';
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount, useSwitchChain } from 'wagmi';
-import { parseEther, toHex } from 'viem';
-import { config, ARC_CHAIN_ID } from '@/lib/wagmi';
+import { toHex } from 'viem';
+import { ARC_CHAIN_ID, USDC_ADDRESS, AGENTI_MARKETPLACE_ABI } from '@/lib/arc/config';
+import { config } from '@/lib/wagmi';
 import type { PurchaseState } from '@/lib/arc/types';
 
-const USDC_ADDRESS = '0x3600000000000000000000000000000000000000000000';
 const MARKETPLACE_ADDRESS = process.env.NEXT_PUBLIC_MARKETPLACE_ADDRESS as string | undefined;
 
-const USDC_ABI = [
-  {
-    name: 'approve',
-    type: 'function',
-    inputs: [
-      { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    outputs: [{ name: '', type: 'bool' }],
-    stateMutability: 'nonpayable',
-  },
-] as const;
-
-const MARKETPLACE_ABI = [
-  {
-    name: 'purchaseAgent',
-    type: 'function',
-    inputs: [{ name: 'agentId', type: 'bytes32' }],
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-] as const;
-
 export function usePurchaseAgent(agentId: string, priceUSDC: number) {
-  const { address, chainId, isConnected } = useAccount();
+  const { address, chainId } = useAccount();
   const { switchChain } = useSwitchChain();
 
   const [state, setState] = useState<PurchaseState>('idle');
@@ -41,7 +18,7 @@ export function usePurchaseAgent(agentId: string, priceUSDC: number) {
 
   const { data: usdcBalance } = useReadContract({
     address: USDC_ADDRESS as `0x${string}`,
-    abi: USDC_ABI,
+    abi: ['function balanceOf(address _owner) view returns (uint256)'] as const,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
     chainId: ARC_CHAIN_ID,
@@ -49,18 +26,7 @@ export function usePurchaseAgent(agentId: string, priceUSDC: number) {
 
   const { data: usdcAllowance } = useReadContract({
     address: USDC_ADDRESS as `0x${string}`,
-    abi: [
-      {
-        name: 'allowance',
-        type: 'function',
-        inputs: [
-          { name: 'owner', type: 'address' },
-          { name: 'spender', type: 'address' },
-        ],
-        outputs: [{ name: '', type: 'uint256' }],
-        stateMutability: 'view',
-      },
-    ],
+    abi: ['function allowance(address _owner, address _spender) view returns (uint256)'] as const,
     functionName: 'allowance',
     args: address && MARKETPLACE_ADDRESS ? [address, MARKETPLACE_ADDRESS] : undefined,
     chainId: ARC_CHAIN_ID,
@@ -86,6 +52,75 @@ export function usePurchaseAgent(agentId: string, priceUSDC: number) {
       setError('Wallet not connected or marketplace not configured');
       return;
     }
+
+    if (chainId !== ARC_CHAIN_ID) {
+      try {
+        await switchChain({ chainId: ARC_CHAIN_ID });
+      } catch {
+        setError('Please switch to Arc Testnet network');
+        return;
+      }
+    }
+
+    setError(null);
+
+    if ((usdcAllowance as bigint) < BigInt(priceUSDC)) {
+      setState('approving');
+      try {
+        writeApprove({
+          address: USDC_ADDRESS as `0x${string}`,
+          abi: ['function approve(address _spender, uint256 _value) returns (bool)'] as const,
+          functionName: 'approve',
+          args: [MARKETPLACE_ADDRESS, toHex(BigInt(priceUSDC) * 10n ** 12n)],
+          chainId: ARC_CHAIN_ID,
+        });
+      } catch (e: unknown) {
+        const err = e as { code?: number; message?: string };
+        if (err.code === 4001) {
+          setError('Transaction rejected by user');
+        } else {
+          setError(err.message || 'Approval failed');
+        }
+        setState('error');
+      }
+    } else {
+      setState('purchasing');
+      try {
+        writePurchase({
+          address: MARKETPLACE_ADDRESS as `0x${string}`,
+          abi: AGENTI_MARKETPLACE_ABI,
+          functionName: 'purchaseAgent',
+          args: [toHex(BigInt(agentId))],
+          chainId: ARC_CHAIN_ID,
+        });
+      } catch (e: unknown) {
+        const err = e as { code?: number; message?: string };
+        if (err.code === 4001) {
+          setError('Transaction rejected by user');
+        } else {
+          setError(err.message || 'Purchase failed');
+        }
+        setState('error');
+      }
+    }
+  }, [address, chainId, priceUSDC, writeApprove, writePurchase, switchChain, usdcAllowance, agentId]);
+
+  const finalState: PurchaseState = 
+    isApproveSuccess || isPurchaseSuccess ? 'done' :
+    isApprovePending || isPurchasePending ? 'transacting' :
+    state;
+
+  return {
+    state: finalState,
+    error,
+    needsApproval,
+    purchase,
+    reset: () => {
+      setState('idle');
+      setError(null);
+    },
+  };
+}
 
     if (chainId !== ARC_CHAIN_ID) {
       try {

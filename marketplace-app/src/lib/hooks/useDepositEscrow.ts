@@ -3,56 +3,19 @@
 import { useState, useCallback } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSwitchChain, useReadContract } from 'wagmi';
 import { toHex } from 'viem';
-import { config, ARC_CHAIN_ID, USDC_ADDRESS, ARC_EXPLORER_URL } from '@/lib/wagmi';
+import { ARC_CHAIN_ID, USDC_ADDRESS } from '@/lib/arc/config';
 import type { PurchaseState } from '@/lib/arc/types';
 
 const ESCROW_ADDRESS = process.env.NEXT_PUBLIC_ESCROW_ADDRESS as string | undefined;
 
-const USDC_ABI = [
-  {
-    name: 'approve',
-    type: 'function',
-    inputs: [
-      { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    outputs: [{ name: '', type: 'bool' }],
-    stateMutability: 'nonpayable',
-  },
-] as const;
-
 const ESCROW_ABI = [
-  {
-    name: 'deposit',
-    type: 'function',
-    inputs: [
-      { name: 'skillId', type: 'bytes32' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    name: 'withdraw',
-    type: 'function',
-    inputs: [{ name: 'skillId', type: 'bytes32' }],
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    name: 'getBalance',
-    type: 'function',
-    inputs: [
-      { name: 'user', type: 'address' },
-      { name: 'skillId', type: 'bytes32' },
-    ],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-  },
+  { name: 'deposit', type: 'function', inputs: [{ name: 'skillId', type: 'bytes32' }, { name: 'amount', type: 'uint256' }], outputs: [], stateMutability: 'nonpayable' },
+  { name: 'withdraw', type: 'function', inputs: [{ name: 'skillId', type: 'bytes32' }], outputs: [], stateMutability: 'nonpayable' },
+  { name: 'getBalance', type: 'function', inputs: [{ name: 'user', type: 'address' }, { name: 'skillId', type: 'bytes32' }], outputs: [{ name: '', type: 'uint256' }], stateMutability: 'view' },
 ] as const;
 
 export function useDepositEscrow(skillId: string, pricePerCall: number) {
-  const { address, chainId, isConnected } = useAccount();
+  const { address, chainId } = useAccount();
   const { switchChain } = useSwitchChain();
 
   const [step, setStep] = useState<PurchaseState>('idle');
@@ -61,7 +24,7 @@ export function useDepositEscrow(skillId: string, pricePerCall: number) {
 
   const { data: usdcAllowance } = useReadContract({
     address: USDC_ADDRESS as `0x${string}`,
-    abi: USDC_ABI,
+    abi: ['function allowance(address _owner, address _spender) view returns (uint256)'] as const,
     functionName: 'allowance',
     args: address && ESCROW_ADDRESS ? [address, ESCROW_ADDRESS] : undefined,
     chainId: ARC_CHAIN_ID,
@@ -79,7 +42,7 @@ export function useDepositEscrow(skillId: string, pricePerCall: number) {
   const { writeContract: writeDeposit, data: depositData } = useWriteContract();
   const { writeContract: writeWithdraw, data: withdrawData } = useWriteContract();
 
-  const { isLoading: isApprovePending } = useWaitForTransactionReceipt({
+  const { isLoading: isApprovePending, isSuccess: isApproveSuccess } = useWaitForTransactionReceipt({
     hash: approveData,
     chainId: ARC_CHAIN_ID,
   });
@@ -98,6 +61,16 @@ export function useDepositEscrow(skillId: string, pricePerCall: number) {
   const estimatedCalls = pricePerCall > 0 ? currentBalance / pricePerCall : 0;
 
   const needsApproval = !usdcAllowance || (usdcAllowance as bigint) < BigInt(1_000_000);
+
+  const handleError = (e: unknown, fallbackMsg: string) => {
+    const err = e as { code?: number; message?: string };
+    if (err.code === 4001) {
+      setError('Transaction rejected by user');
+    } else {
+      setError(err.message || fallbackMsg);
+    }
+    setStep('error');
+  };
 
   const deposit = useCallback(async (amountUSDC: number) => {
     if (!address || !ESCROW_ADDRESS) {
@@ -120,21 +93,20 @@ export function useDepositEscrow(skillId: string, pricePerCall: number) {
     if (needsApproval) {
       setStep('approving');
       try {
-        await writeApprove({
+        writeApprove({
           address: USDC_ADDRESS as `0x${string}`,
-          abi: USDC_ABI,
+          abi: ['function approve(address _spender, uint256 _value) returns (bool)'] as const,
           functionName: 'approve',
           args: [ESCROW_ADDRESS, toHex(amountRaw * 10n)],
           chainId: ARC_CHAIN_ID,
         });
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Approval failed');
-        setStep('error');
+        handleError(e, 'Approval failed');
       }
     } else {
       setStep('purchasing');
       try {
-        await writeDeposit({
+        writeDeposit({
           address: ESCROW_ADDRESS as `0x${string}`,
           abi: ESCROW_ABI,
           functionName: 'deposit',
@@ -142,11 +114,10 @@ export function useDepositEscrow(skillId: string, pricePerCall: number) {
           chainId: ARC_CHAIN_ID,
         });
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Deposit failed');
-        setStep('error');
+        handleError(e, 'Deposit failed');
       }
     }
-  }, [address, chainId, needsApproval, writeApprove, writeDeposit, switchChain]);
+  }, [address, chainId, needsApproval, writeApprove, writeDeposit, switchChain, skillId]);
 
   const withdraw = useCallback(async () => {
     if (!address || !ESCROW_ADDRESS) {
@@ -165,7 +136,7 @@ export function useDepositEscrow(skillId: string, pricePerCall: number) {
 
     setStep('purchasing');
     try {
-      await writeWithdraw({
+      writeWithdraw({
         address: ESCROW_ADDRESS as `0x${string}`,
         abi: ESCROW_ABI,
         functionName: 'withdraw',
@@ -173,13 +144,14 @@ export function useDepositEscrow(skillId: string, pricePerCall: number) {
         chainId: ARC_CHAIN_ID,
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Withdraw failed');
-      setStep('error');
+      handleError(e, 'Withdraw failed');
     }
   }, [address, chainId, writeWithdraw, switchChain]);
 
+  const finalStep: PurchaseState = isDepositSuccess || isWithdrawSuccess ? 'done' : isDepositPending || isWithdrawPending || isApprovePending ? 'transacting' : step;
+
   return {
-    step,
+    step: finalStep,
     error,
     txHash,
     escrowBalance: currentBalance,
