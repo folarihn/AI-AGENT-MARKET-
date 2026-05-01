@@ -327,6 +327,35 @@ export default function Home() {
           </Link>
         </div>
       </section>
+
+      {/* ═══════════════ FOOTER ═══════════════ */}
+      <footer className="footer-glass" style={{ padding: '32px 24px' }}>
+        <div
+          style={{
+            maxWidth: '1100px',
+            margin: '0 auto',
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '16px',
+          }}
+        >
+          <span
+            style={{
+              fontSize: '1rem',
+              fontWeight: 700,
+              color: '#ffffff',
+              letterSpacing: '-0.02em',
+            }}
+          >
+            AgentMarket<span style={{ color: '#c4b5fd' }}>.</span>
+          </span>
+          <p style={{ fontSize: '0.8125rem', color: 'rgba(255, 255, 255, 0.7)', margin: 0 }}>
+            &copy; 2026 AI Agent Marketplace. All rights reserved.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

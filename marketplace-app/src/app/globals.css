@@ -530,3 +530,165 @@ body {
   }
 }
 
+/* ── Creator Dashboard: Step indicator ── */
+.creator-step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 2px solid rgba(0,0,0,0.1);
+  background: rgba(255,255,255,0.6);
+  color: #9ca3af;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 1;
+}
+
+.creator-step-dot.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 0 4px rgba(106,90,205,0.18);
+}
+
+.creator-step-dot.completed {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
+}
+
+.creator-step-connector {
+  flex: 1;
+  height: 2px;
+  background: rgba(0,0,0,0.08);
+  transition: background 0.3s;
+}
+
+.creator-step-connector.completed {
+  background: #10b981;
+}
+
+/* ── Creator Dashboard: Drop zone ── */
+.drop-zone {
+  border: 2px dashed rgba(106,90,205,0.25);
+  border-radius: 20px;
+  padding: 48px 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(106,90,205,0.03);
+  position: relative;
+}
+
+.drop-zone:hover {
+  border-color: rgba(106,90,205,0.45);
+  background: rgba(106,90,205,0.06);
+}
+
+.drop-zone.active {
+  border-color: var(--accent);
+  background: rgba(106,90,205,0.1);
+  box-shadow: 0 0 0 4px rgba(106,90,205,0.08);
+}
+
+.drop-zone.has-file {
+  border-style: solid;
+  border-color: #10b981;
+  background: rgba(16,185,129,0.04);
+}
+
+/* ── Creator Dashboard: Form inputs ── */
+.creator-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.1);
+  background: rgba(255,255,255,0.6);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  transition: all 0.2s;
+  outline: none;
+  font-family: inherit;
+}
+
+.creator-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(106,90,205,0.1);
+}
+
+.creator-input::placeholder {
+  color: #9ca3af;
+}
+
+.creator-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.creator-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+
+/* ── Dark mode overrides for creator ── */
+[data-theme='dark'] .creator-input {
+  background: rgba(30,27,60,0.5);
+  border-color: rgba(106,90,205,0.2);
+}
+
+[data-theme='dark'] .creator-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(106,90,205,0.2);
+}
+
+[data-theme='dark'] .creator-step-dot {
+  background: rgba(30,27,60,0.6);
+  border-color: rgba(106,90,205,0.2);
+}
+
+[data-theme='dark'] .creator-step-connector {
+  background: rgba(255,255,255,0.08);
+}
+
+[data-theme='dark'] .drop-zone {
+  border-color: rgba(106,90,205,0.3);
+  background: rgba(106,90,205,0.05);
+}
+
+[data-theme='dark'] .drop-zone:hover {
+  border-color: rgba(106,90,205,0.5);
+  background: rgba(106,90,205,0.1);
+}
+
+[data-theme='dark'] .drop-zone.has-file {
+  border-color: #10b981;
+  background: rgba(16,185,129,0.08);
+}
+
+/* ── Step fade animation ── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.step-content {
+  animation: fadeInUp 0.3s ease forwards;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

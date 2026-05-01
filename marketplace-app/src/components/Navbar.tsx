@@ -35,7 +35,7 @@ export function Navbar() {
     }
   }, [mounted, isConnected, router]);
 
-  if (pathname === '/marketplace') return null;
+  if (pathname === '/marketplace' || pathname?.startsWith('/dashboard/creator')) return null;
 
   const isActive = (path: string) => pathname === path;
 
