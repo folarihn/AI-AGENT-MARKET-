@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import CursorGradient from '@/components/CursorGradient';
+import { HeroConnectButton } from '@/components/HeroConnectButton';
 import {
   ShieldCheck,
   Search,
@@ -17,6 +19,7 @@ import {
 export default function Home() {
   return (
     <div className="flex flex-col min-h-screen hero-gradient">
+      <CursorGradient />
       {/* ═══════════════ HERO SECTION ═══════════════ */}
       <section style={{ paddingTop: '160px', paddingBottom: '100px' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 24px', textAlign: 'center', position: 'relative' }}>
@@ -64,12 +67,7 @@ export default function Home() {
 
           {/* CTA Buttons */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
-            <Link href="/marketplace" className="btn-primary">
-              Browse Agents
-              <span className="btn-icon">
-                <ArrowRight size={14} />
-              </span>
-            </Link>
+            <HeroConnectButton />
             <Link href="/dashboard/creator" className="btn-secondary">
               Submit an Agent
               <span className="btn-icon">

@@ -411,3 +411,122 @@ body {
     font-size: 2.25rem !important;
   }
 }
+
+/* ── Dashboard (marketplace) ── */
+.dash-nav-link:hover  { background: rgba(106,90,205,0.08) !important; color: #6a5acd !important; }
+.dash-row:hover       { background: rgba(106,90,205,0.05) !important; }
+.dash-trend-row:hover { background: rgba(106,90,205,0.07) !important; }
+.dash-tab:hover       { color: #6a5acd !important; }
+.dash-search:focus    { border-color: var(--accent) !important; outline: none; }
+
+/* ── Theme variables (light = default) ── */
+:root {
+  --text-primary: #111827;
+  --text-secondary: #374151;
+  --text-muted: #9ca3af;
+  --profile-bg: rgba(255,255,255,0.5);
+  --profile-border: rgba(0,0,0,0.06);
+  --profile-shadow: rgba(106,90,205,0.12);
+  --dropdown-bg: rgba(255,255,255,0.92);
+  --dropdown-border: rgba(255,255,255,0.6);
+  --dropdown-shadow: rgba(0,0,0,0.12);
+  --divider: rgba(0,0,0,0.06);
+  --menu-hover: rgba(0,0,0,0.04);
+
+  /* Sidebar / dashboard surfaces (light) */
+  --sidebar-bg: rgba(255,255,255,0.72);
+  --topbar-bg: rgba(255,255,255,0.65);
+  --card-bg: rgba(255,255,255,0.65);
+  --card-border: rgba(255,255,255,0.7);
+  --row-hover: rgba(106,90,205,0.05);
+}
+
+/* ── Dark mode via data-theme ── */
+[data-theme='dark'] {
+  --background: #0c0a1a;
+  --foreground: #e5e7eb;
+
+  --gradient-start: #0c0a1a;
+  --gradient-mid: #110e24;
+  --gradient-end: #16132e;
+
+  --surface: rgba(30, 27, 60, 0.7);
+  --surface-border: rgba(106, 90, 205, 0.15);
+  --surface-hover: rgba(40, 36, 75, 0.8);
+
+  --text-primary: #f3f4f6;
+  --text-secondary: #d1d5db;
+  --text-muted: #6b7280;
+  --profile-bg: rgba(30,27,60,0.6);
+  --profile-border: rgba(106,90,205,0.2);
+  --profile-shadow: rgba(0,0,0,0.3);
+  --dropdown-bg: rgba(22,19,46,0.95);
+  --dropdown-border: rgba(106,90,205,0.2);
+  --dropdown-shadow: rgba(0,0,0,0.4);
+  --divider: rgba(255,255,255,0.06);
+  --menu-hover: rgba(255,255,255,0.06);
+
+  --sidebar-bg: rgba(16,14,32,0.92);
+  --topbar-bg: rgba(16,14,32,0.88);
+  --card-bg: rgba(30,27,60,0.7);
+  --card-border: rgba(106,90,205,0.15);
+  --row-hover: rgba(106,90,205,0.1);
+
+  --pill-bg: rgba(106,90,205,0.12);
+  --pill-text: #d1d5db;
+}
+
+/* Dark mode overrides for glass components */
+[data-theme='dark'] .glass-nav {
+  background: rgba(16,14,32,0.85);
+  border-color: rgba(106,90,205,0.15);
+}
+
+[data-theme='dark'] .glass {
+  background: var(--surface);
+  border-color: var(--surface-border);
+}
+
+[data-theme='dark'] .glass:hover {
+  background: var(--surface-hover);
+}
+
+[data-theme='dark'] .hero-gradient {
+  background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-mid) 50%, var(--gradient-end) 100%);
+}
+
+[data-theme='dark'] .hero-gradient::before {
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+}
+
+[data-theme='dark'] .footer-glass {
+  background: linear-gradient(145deg, #0c0a1a, #16132e);
+  border-top-color: rgba(106,90,205,0.15);
+}
+
+[data-theme='dark'] .dash-nav-link:hover {
+  background: rgba(106,90,205,0.15) !important;
+}
+
+[data-theme='dark'] .dash-row:hover {
+  background: rgba(106,90,205,0.1) !important;
+}
+
+[data-theme='dark'] .dash-trend-row:hover {
+  background: rgba(106,90,205,0.12) !important;
+}
+
+/* ── Profile dropdown animation ── */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

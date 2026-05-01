@@ -1,16 +1,39 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Menu, X, User as UserIcon, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Menu, X, User as UserIcon, Wallet } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { signOut, useSession } from 'next-auth/react';
+import { useAccount, useSwitchChain } from 'wagmi';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { ARC_CHAIN_ID } from '@/lib/wagmi';
 
 export function Navbar() {
   const { data: session } = useSession();
   const user = session?.user;
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const router = useRouter();
+
+  const { isConnected, chainId } = useAccount();
+  const { openConnectModal } = useConnectModal();
+  const { switchChain } = useSwitchChain();
+
+  useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    if (isConnected && chainId !== ARC_CHAIN_ID) {
+      switchChain({ chainId: ARC_CHAIN_ID });
+    }
+  }, [isConnected, chainId, switchChain]);
+
+  useEffect(() => {
+    if (mounted && isConnected) {
+      router.push('/marketplace');
+    }
+  }, [mounted, isConnected, router]);
 
   if (pathname === '/marketplace') return null;
 
@@ -129,24 +152,28 @@ export function Navbar() {
                 </button>
               </>
             ) : (
-              <>
-                <Link
-                  href="/marketplace"
-                  style={{
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    color: '#fff',
-                    textDecoration: 'none',
-                    padding: '8px 20px',
-                    borderRadius: '999px',
-                    background: 'var(--accent)',
-                    transition: 'all 0.2s',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Browse Agents
-                </Link>
-              </>
+              <button
+                type="button"
+                onClick={() => openConnectModal?.()}
+                style={{
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: '#fff',
+                  padding: '8px 20px',
+                  borderRadius: '999px',
+                  background: 'var(--accent)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <Wallet size={14} />
+                Connect Wallet
+              </button>
             )}
 
             {/* Hamburger (shown only on mobile but placed here for alignment) */}
@@ -296,23 +323,28 @@ export function Navbar() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', gap: '8px', padding: '4px 14px' }}>
-                  <Link
-                    href="/marketplace"
-                    onClick={() => setIsMobileMenuOpen(false)}
+                  <button
+                    type="button"
+                    onClick={() => { openConnectModal?.(); setIsMobileMenuOpen(false); }}
                     style={{
                       flex: 1,
-                      textAlign: 'center',
                       padding: '10px',
                       borderRadius: '10px',
                       fontSize: '0.875rem',
                       fontWeight: 600,
                       color: '#fff',
                       background: 'var(--accent)',
-                      textDecoration: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
                     }}
                   >
-                    Browse Agents
-                  </Link>
+                    <Wallet size={14} />
+                    Connect Wallet
+                  </button>
                 </div>
               )}
             </div>
