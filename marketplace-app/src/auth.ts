@@ -69,7 +69,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         try {
           const message = new SiweMessage(messageStr);
-          const { data } = message.verify({ signature });
+          const { data } = await message.verify({ signature });
 
           const nonceRecord = await prisma.nonce.findUnique({
             where: { nonce: data.nonce },

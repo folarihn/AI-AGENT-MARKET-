@@ -105,7 +105,7 @@ export function usePurchaseAgent(agentId: string, priceUSDC: number) {
           address: USDC_ADDRESS as `0x${string}`,
           abi: USDC_ABI,
           functionName: 'approve',
-          args: [MARKETPLACE_ADDRESS, toHex(BigInt(priceUSDC) * 10n ** 12n)],
+          args: [MARKETPLACE_ADDRESS as `0x${string}`, BigInt(priceUSDC) * 10n ** 6n],
           chainId: ARC_CHAIN_ID,
         });
       } catch (e) {
