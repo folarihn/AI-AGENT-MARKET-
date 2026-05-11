@@ -6,7 +6,8 @@ import { toHex } from 'viem';
 import { useRouter } from 'next/navigation';
 import { Loader2, Check, AlertCircle, Wallet, Zap, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ARC_CHAIN_ID, USDC_ADDRESS } from '@/lib/wagmi';
+import { ARC_CHAIN_ID } from '@/lib/wagmi';
+import { USDC_ADDRESS } from '@/lib/arc/config';
 import type { PurchaseState } from '@/lib/arc/types';
 
 const ESCROW_ADDRESS = process.env.NEXT_PUBLIC_ESCROW_ADDRESS as string | undefined;
