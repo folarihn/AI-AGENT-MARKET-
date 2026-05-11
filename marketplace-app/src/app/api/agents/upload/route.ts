@@ -104,13 +104,14 @@ export async function POST(req: NextRequest) {
         agentJsonContent = JSON.parse(content || '{}');
       }
 
-      name = agentJsonContent.name;
-      displayName = metadata.displayName || agentJsonContent.display_name || agentJsonContent.name;
-      description = metadata.description || agentJsonContent.description;
-      version = agentJsonContent.version;
-      tags = metadata.tags || agentJsonContent.tags || [];
+      const str = (v: unknown) => (typeof v === 'string' ? v : '');
+      name = str(agentJsonContent.name);
+      displayName = metadata.displayName || str(agentJsonContent.display_name) || str(agentJsonContent.name);
+      description = metadata.description || str(agentJsonContent.description);
+      version = str(agentJsonContent.version);
+      tags = metadata.tags || (Array.isArray(agentJsonContent.tags) ? agentJsonContent.tags as string[] : []);
 
-      const permSet = new Set((agentJsonContent.permissions || []).map((p: string) => p.toLowerCase()));
+      const permSet = new Set((Array.isArray(agentJsonContent.permissions) ? agentJsonContent.permissions as string[] : []).map((p: string) => p.toLowerCase()));
       permissions = {
         network: permSet.has('network'),
         filesystem: permSet.has('filesystem'),
