@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { storage } from '@/lib/storage';
 import { scanner } from '@/lib/scanner';
 import { detectAssetTypeAndValidate, type AssetType, type SkillManifest } from '@/lib/skills/validation';
-import { AgentStatus } from '@/data/mock';
+import { AgentStatus } from '@prisma/client';
 import { auth } from '@/auth';
 
 type PricingModel = 'FREE' | 'ONE_TIME' | 'PER_CALL';
@@ -147,6 +147,8 @@ export async function POST(req: NextRequest) {
 
     const readmeFile = Object.keys(zip.files).find((n) => n.endsWith('README.md'));
     const readmeText = readmeFile ? await zip.file(readmeFile)?.async('string') : undefined;
+
+    const itemType: 'AGENT' | 'SKILL' = assetType === 'SKILL' ? 'SKILL' : 'AGENT';
 
     const newAsset = await db.agents.create({
       slug: name,
