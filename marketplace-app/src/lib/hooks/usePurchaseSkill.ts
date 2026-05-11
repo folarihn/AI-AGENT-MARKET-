@@ -62,7 +62,7 @@ export function usePurchaseSkill(skillId: string, priceUSDC: number) {
       },
     ],
     functionName: 'allowance',
-    args: address && MARKETPLACE_ADDRESS ? [address, MARKETPLACE_ADDRESS] : undefined,
+    args: address && MARKETPLACE_ADDRESS ? [address, MARKETPLACE_ADDRESS as `0x${string}`] as const : undefined,
     chainId: ARC_CHAIN_ID,
   });
 
@@ -79,7 +79,7 @@ export function usePurchaseSkill(skillId: string, priceUSDC: number) {
     chainId: ARC_CHAIN_ID,
   });
 
-  const needsApproval = !usdcAllowance || (usdcBalance as bigint) < BigInt(priceUSDC) || (usdcAllowance as bigint) < BigInt(priceUSDC);
+  const needsApproval = !usdcAllowance || (BigInt((usdcBalance as bigint | undefined) ?? 0n)) < BigInt(priceUSDC) || (BigInt((usdcAllowance as bigint | undefined) ?? 0n)) < BigInt(priceUSDC);
 
   const purchase = useCallback(async () => {
     if (!address || !MARKETPLACE_ADDRESS) {

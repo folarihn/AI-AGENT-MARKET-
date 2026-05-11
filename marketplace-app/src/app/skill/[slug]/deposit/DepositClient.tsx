@@ -112,7 +112,7 @@ export default function DepositClient({
         address: USDC_ADDRESS as `0x${string}`,
         abi: USDC_ABI,
         functionName: 'approve',
-        args: [ESCROW_ADDRESS, toHex(amountRaw * 2n)],
+        args: [ESCROW_ADDRESS as `0x${string}`, BigInt(toHex(amountRaw * 2n))],
         chainId: ARC_CHAIN_ID,
       });
     } else {
@@ -120,7 +120,7 @@ export default function DepositClient({
         address: ESCROW_ADDRESS as `0x${string}`,
         abi: ESCROW_ABI,
         functionName: 'deposit',
-        args: [skill.id as `0x${string}`, toHex(amountRaw)],
+        args: [skill.id as `0x${string}`, amountRaw],
         chainId: ARC_CHAIN_ID,
       });
     }

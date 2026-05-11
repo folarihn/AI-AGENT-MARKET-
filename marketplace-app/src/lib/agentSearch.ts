@@ -198,6 +198,10 @@ export async function searchAgents(params: AgentSearchParams): Promise<AgentSear
   const filters: string[] = [];
   const filterParams: Array<string | number> = [];
 
+  let countsNext = 2;
+  const countsFilters: string[] = [];
+  const countsParams: Array<number> = [];
+
   if (category) {
     filters.push(`AND a."category" = $${nextParam}::"AgentCategory"`);
     filterParams.push(category);
@@ -266,9 +270,6 @@ export async function searchAgents(params: AgentSearchParams): Promise<AgentSear
       ${filters.join('\n      ')}
   `;
 
-  let countsNext = 2;
-  const countsFilters: string[] = [];
-  const countsParams: Array<number> = [];
   if (priceMin !== null) {
     countsFilters.push(`AND a."price" >= $${countsNext}`);
     countsParams.push(priceMin);

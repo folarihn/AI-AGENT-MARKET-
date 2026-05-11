@@ -4,7 +4,7 @@ import Google from 'next-auth/providers/google';
 import Credentials from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import bcrypt from 'bcryptjs';
-import { siwe } from 'siwe';
+import { SiweMessage } from 'siwe';
 import { prisma } from '@/lib/prisma';
 
 type AppUserRole = 'BUYER' | 'CREATOR' | 'ADMIN';
@@ -68,7 +68,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!messageStr || !signature) return null;
 
         try {
-          const message = new siwe.SiweMessage(messageStr);
+          const message = new SiweMessage(messageStr);
           const { data } = message.verify({ signature });
 
           const nonceRecord = await prisma.nonce.findUnique({
@@ -157,7 +157,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.sub;
         const role = (token as unknown as { role?: AppUserRole }).role ?? 'BUYER';
         session.user.role = role;
-        session.user.walletAddress = (token as unknown as { walletAddress?: string }).walletAddress;
+        (session.user as unknown as { walletAddress?: string }).walletAddress = (token as unknown as { walletAddress?: string }).walletAddress;
       }
       return session;
     },

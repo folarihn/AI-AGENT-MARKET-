@@ -125,7 +125,7 @@ export function useDepositEscrow(skillId: string, pricePerCall: number) {
           address: USDC_ADDRESS as `0x${string}`,
           abi: USDC_ABI,
           functionName: 'approve',
-          args: [ESCROW_ADDRESS, toHex(amountRaw * 10n)],
+          args: [ESCROW_ADDRESS as `0x${string}`, amountRaw * 10n],
           chainId: ARC_CHAIN_ID,
         });
       } catch (e) {
@@ -139,7 +139,7 @@ export function useDepositEscrow(skillId: string, pricePerCall: number) {
           address: ESCROW_ADDRESS as `0x${string}`,
           abi: ESCROW_ABI,
           functionName: 'deposit',
-          args: [skillId as `0x${string}`, toHex(amountRaw)],
+          args: [skillId as `0x${string}`, amountRaw],
           chainId: ARC_CHAIN_ID,
         });
       } catch (e) {

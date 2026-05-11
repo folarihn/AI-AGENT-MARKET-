@@ -161,8 +161,8 @@ export const db = {
           pricingModel: data.pricingModel || 'ONE_TIME',
           pricePerCall: data.pricePerCall != null ? new Prisma.Decimal(data.pricePerCall) : null,
           runtime: data.runtime ?? null,
-          inputs: data.inputs ?? null,
-          outputs: data.outputs ?? null,
+          inputs: data.inputs != null ? (data.inputs as Prisma.InputJsonValue) : Prisma.JsonNull,
+          outputs: data.outputs != null ? (data.outputs as Prisma.InputJsonValue) : Prisma.JsonNull,
         },
       });
 
