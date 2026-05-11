@@ -165,6 +165,7 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ sl
     updatedAt: agent.updatedAt.toISOString().slice(0, 10),
     verified: agent.verified,
     price: Number(agent.price.toString()),
+    status: agent.status,
     readmeText: agent.readmeText,
     permissions: { network: agent.permissionsNetwork, filesystem: agent.permissionsFilesystem, subprocess: agent.permissionsSubprocess },
   };
