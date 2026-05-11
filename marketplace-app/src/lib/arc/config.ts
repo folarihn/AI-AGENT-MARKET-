@@ -1,5 +1,5 @@
-import { createConfig, http } from 'wagmi/config';
-import { mainnet, sepolia } from 'wagmi/chains';
+import { createConfig, http } from 'wagmi';
+import { mainnet, sepolia } from 'viem/chains';
 import { injected } from 'wagmi/connectors';
 
 export const arcTestnet = {

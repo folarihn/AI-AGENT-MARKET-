@@ -1,5 +1,5 @@
 import type { Chain, WalletClient } from 'viem';
-import type { Config } from 'wagmi/config';
+import type { Config } from 'wagmi';
 
 export interface ArcChain extends Chain {
   id: typeof ARC_CHAIN_ID;
