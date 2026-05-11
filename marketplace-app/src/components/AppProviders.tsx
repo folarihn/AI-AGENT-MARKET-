@@ -20,7 +20,6 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
             accentColorForeground: 'white',
             borderRadius: 'large',
           })}
-          initialChain={5042002}
         >
           <SessionProvider>
             <ThemeProvider>{children}</ThemeProvider>

@@ -42,7 +42,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
 
-    const agent = await db.agents.findById(agentId);
+    const agent = await prisma.agent.findUnique({
+      where: { id: agentId },
+      include: { creator: { select: { walletAddress: true } } },
+    });
     if (!agent) {
       return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
     }
@@ -66,13 +69,14 @@ export async function POST(req: NextRequest) {
             account: PLATFORM_PRIVATE_KEY as `0x${string}`,
           });
 
-          const pricePerCallRaw = BigInt(Number(agent.price) * 1_000_000);
+          const pricePerCallRaw = BigInt(Math.round(Number(agent.pricePerCall ?? 0) * 1_000_000));
+          const creatorAddress = agent.creator.walletAddress ?? '0x0000000000000000000000000000000000000000';
 
           const { request } = await walletClient.simulateContract({
             address: ESCROW_ADDRESS as `0x${string}`,
             abi: ESCROW_ABI,
             functionName: 'registerSkill',
-            args: [agentId as `0x${string}`, agent.creatorAddress as `0x${string}`, pricePerCallRaw],
+            args: [agentId as `0x${string}`, creatorAddress as `0x${string}`, pricePerCallRaw],
           });
 
           const hash = await walletClient.writeContract(request);
@@ -88,9 +92,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    await db.agents.update(agentId, {
-      status: newStatus,
-      verified: action === 'APPROVE',
+    await prisma.agent.update({
+      where: { id: agentId },
+      data: {
+        status: newStatus as 'PUBLISHED' | 'REJECTED',
+        verified: action === 'APPROVE',
+      },
     });
 
     await db.audit.create({
