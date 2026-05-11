@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import { ERC1155 } from "openzeppelin-contracts/contracts/token/ERC1155/ERC1155.sol";
-import { Ownable } from "openzeppelin-contracts/contracts/access/Ownable.sol";
-import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
+import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 interface IAgentiLicense is IERC165 {
     function mint(address to, uint256 agentId, uint256 amount) external;
@@ -54,7 +54,7 @@ contract AgentiLicense is ERC1155, Ownable {
         return (creator, royalty);
     }
 
-    function supportsInterface(bytes4 interfaceId) public pure override(ERC1155, IERC165) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(ERC1155) returns (bool) {
         return interfaceId == 0x2a55205a || super.supportsInterface(interfaceId);
     }
 

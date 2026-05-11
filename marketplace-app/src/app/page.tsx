@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useState } from 'react';
 import {
   ShieldCheck,
   Search,
@@ -12,9 +15,12 @@ import {
   Zap,
   Lock,
   Globe,
+  MessageSquarePlus,
 } from 'lucide-react';
+import CustomRequestModal from '@/components/CustomRequestModal';
 
 export default function Home() {
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
   return (
     <div className="flex flex-col min-h-screen hero-gradient">
       {/* ═══════════════ HERO SECTION ═══════════════ */}
@@ -279,6 +285,156 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ═══════════════ CUSTOM REQUEST SECTION ═══════════════ */}
+      <section style={{ padding: '0 24px 80px', maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%)',
+            borderRadius: '24px',
+            padding: '56px 48px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '40px',
+            flexWrap: 'wrap',
+            boxShadow: '0 20px 60px rgba(30, 27, 75, 0.3)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Background decoration */}
+          <div
+            style={{
+              position: 'absolute',
+              top: '-40px',
+              right: '-40px',
+              width: '220px',
+              height: '220px',
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.04)',
+              pointerEvents: 'none',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '-60px',
+              right: '120px',
+              width: '160px',
+              height: '160px',
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.03)',
+              pointerEvents: 'none',
+            }}
+          />
+
+          <div style={{ flex: 1, minWidth: '280px', position: 'relative' }}>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'rgba(255,255,255,0.12)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '20px',
+                padding: '5px 14px',
+                marginBottom: '20px',
+              }}
+            >
+              <Sparkles size={13} style={{ color: '#c4b5fd' }} />
+              <span style={{ fontSize: '0.8125rem', color: '#c4b5fd', fontWeight: 500 }}>
+                Custom Builds
+              </span>
+            </div>
+
+            <h2
+              style={{
+                fontSize: '2rem',
+                fontWeight: 800,
+                color: 'white',
+                letterSpacing: '-0.025em',
+                lineHeight: 1.2,
+                marginBottom: '14px',
+              }}
+            >
+              Can't find what<br />you need?
+            </h2>
+            <p
+              style={{
+                fontSize: '1.0625rem',
+                color: 'rgba(255,255,255,0.7)',
+                lineHeight: 1.6,
+                maxWidth: '420px',
+              }}
+            >
+              Request a custom workflow or AI skill. Describe what you need and our creator community will build it for you.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-start', position: 'relative' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {[
+                'Specify exactly what tools to connect',
+                'Set your own budget',
+                'Get notified when it\'s ready',
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '50%',
+                      background: 'rgba(167, 139, 250, 0.2)',
+                      border: '1px solid rgba(167, 139, 250, 0.4)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span style={{ fontSize: '0.6rem', color: '#c4b5fd', fontWeight: 700 }}>✓</span>
+                  </div>
+                  <span style={{ fontSize: '0.9375rem', color: 'rgba(255,255,255,0.8)' }}>{item}</span>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setRequestModalOpen(true)}
+              style={{
+                marginTop: '8px',
+                background: 'white',
+                color: '#312e81',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '13px 28px',
+                fontWeight: 700,
+                fontSize: '0.9375rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+                transition: 'transform 0.15s, box-shadow 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 20px rgba(0,0,0,0.25)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.transform = 'none';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(0,0,0,0.2)';
+              }}
+            >
+              <MessageSquarePlus size={16} />
+              Request a Custom Build
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <CustomRequestModal open={requestModalOpen} onClose={() => setRequestModalOpen(false)} />
 
       {/* ═══════════════ FINAL CTA ═══════════════ */}
       <section

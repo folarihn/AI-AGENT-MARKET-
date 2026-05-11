@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Check, X, Eye, ShieldAlert, ShieldCheck, Loader2 } from 'lucide-react';
+import { Check, X, Eye, ShieldAlert, ShieldCheck, Loader2, MessageSquarePlus, ChevronDown } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { Prisma } from '@prisma/client';
 
@@ -45,6 +45,25 @@ interface ScanResult {
   status: 'PASS' | 'FAIL';
 }
 
+interface CustomRequest {
+  id: string;
+  name: string;
+  email: string;
+  title: string;
+  description: string;
+  category: string;
+  budget: string | null;
+  status: 'OPEN' | 'IN_PROGRESS' | 'FULFILLED' | 'CLOSED';
+  createdAt: string;
+}
+
+const REQUEST_STATUS_COLORS: Record<string, string> = {
+  OPEN: 'bg-blue-100 text-blue-700',
+  IN_PROGRESS: 'bg-yellow-100 text-yellow-700',
+  FULFILLED: 'bg-green-100 text-green-700',
+  CLOSED: 'bg-gray-100 text-gray-500',
+};
+
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const [assets, setAssets] = useState<SkillAsset[]>([]);
@@ -52,12 +71,17 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'ALL' | 'AGENT' | 'SKILL'>('ALL');
   const [pricingFilter, setPricingFilter] = useState<'ALL' | 'FREE' | 'ONE_TIME' | 'PER_CALL'>('ALL');
+  const [activeTab, setActiveTab] = useState<'queue' | 'requests'>('queue');
+  const [customRequests, setCustomRequests] = useState<CustomRequest[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestStatusFilter, setRequestStatusFilter] = useState<string>('ALL');
+  const [expandedRequest, setExpandedRequest] = useState<string | null>(null);
 
   const isAdmin = session?.user?.role === 'ADMIN';
 
   useEffect(() => {
     if (!isAdmin) return;
-    
+
     const load = async () => {
       setLoading(true);
       try {
@@ -75,6 +99,42 @@ export default function AdminDashboard() {
 
     load();
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin || activeTab !== 'requests') return;
+    const load = async () => {
+      setRequestsLoading(true);
+      try {
+        const params = requestStatusFilter !== 'ALL' ? `?status=${requestStatusFilter}` : '';
+        const res = await fetch(`/api/custom-requests${params}`);
+        if (res.ok) {
+          const data = await res.json();
+          setCustomRequests(data.items || []);
+        }
+      } catch (e) {
+        console.error('Failed to fetch custom requests', e);
+      }
+      setRequestsLoading(false);
+    };
+    load();
+  }, [isAdmin, activeTab, requestStatusFilter]);
+
+  const updateRequestStatus = async (id: string, newStatus: string) => {
+    try {
+      const res = await fetch('/api/custom-requests', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: newStatus }),
+      });
+      if (res.ok) {
+        setCustomRequests((prev) =>
+          prev.map((r) => (r.id === id ? { ...r, status: newStatus as CustomRequest['status'] } : r))
+        );
+      }
+    } catch {
+      alert('Failed to update status');
+    }
+  };
 
   const filteredAssets = assets.filter((asset) => {
     if (filter !== 'ALL' && asset.status !== 'PENDING_REVIEW') return false;
@@ -118,14 +178,151 @@ export default function AdminDashboard() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Admin Dashboard</h1>
 
+      {/* Main tabs */}
+      <div className="flex gap-1 mb-6 border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab('queue')}
+          className={`px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
+            activeTab === 'queue'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Review Queue
+          {assets.length > 0 && (
+            <span className="ml-2 bg-indigo-100 text-indigo-700 text-xs font-bold px-1.5 py-0.5 rounded-full">
+              {assets.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('requests')}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
+            activeTab === 'requests'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <MessageSquarePlus className="h-4 w-4" />
+          Custom Requests
+          {customRequests.filter(r => r.status === 'OPEN').length > 0 && (
+            <span className="bg-purple-100 text-purple-700 text-xs font-bold px-1.5 py-0.5 rounded-full">
+              {customRequests.filter(r => r.status === 'OPEN').length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {activeTab === 'requests' && (
+        <div>
+          <div className="flex gap-2 mb-4">
+            {(['ALL', 'OPEN', 'IN_PROGRESS', 'FULFILLED', 'CLOSED'] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setRequestStatusFilter(s)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium ${
+                  requestStatusFilter === s
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {s.replace('_', ' ')}
+              </button>
+            ))}
+          </div>
+
+          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">
+                Custom Build Requests ({customRequests.length})
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">Requests from customers for custom workflows and AI skills.</p>
+            </div>
+
+            {requestsLoading ? (
+              <div className="p-8 text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-400" />
+              </div>
+            ) : customRequests.length === 0 ? (
+              <div className="px-4 py-8 text-center text-gray-500">No requests found.</div>
+            ) : (
+              <ul className="divide-y divide-gray-200">
+                {customRequests.map((req) => (
+                  <li key={req.id} className="p-4 sm:px-6 hover:bg-gray-50">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className={`px-2 py-0.5 text-xs font-bold rounded ${REQUEST_STATUS_COLORS[req.status]}`}>
+                              {req.status.replace('_', ' ')}
+                            </span>
+                            <span className="px-2 py-0.5 text-xs font-medium rounded bg-gray-100 text-gray-600">
+                              {req.category}
+                            </span>
+                            <p className="text-base font-semibold text-gray-900 truncate">{req.title}</p>
+                          </div>
+                          <div className="flex flex-wrap gap-3 text-sm text-gray-500">
+                            <span>{req.name}</span>
+                            <span className="text-gray-300">·</span>
+                            <a href={`mailto:${req.email}`} className="text-indigo-600 hover:underline">{req.email}</a>
+                            {req.budget && (
+                              <>
+                                <span className="text-gray-300">·</span>
+                                <span>Budget: {req.budget}</span>
+                              </>
+                            )}
+                            <span className="text-gray-300">·</span>
+                            <span>{new Date(req.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <select
+                            value={req.status}
+                            onChange={(e) => updateRequestStatus(req.id, e.target.value)}
+                            className="text-sm border border-gray-200 rounded-md px-2 py-1.5 bg-white text-gray-700"
+                          >
+                            <option value="OPEN">Open</option>
+                            <option value="IN_PROGRESS">In Progress</option>
+                            <option value="FULFILLED">Fulfilled</option>
+                            <option value="CLOSED">Closed</option>
+                          </select>
+                          <button
+                            onClick={() => setExpandedRequest(expandedRequest === req.id ? null : req.id)}
+                            className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400"
+                          >
+                            <ChevronDown
+                              className={`h-4 w-4 transition-transform ${expandedRequest === req.id ? 'rotate-180' : ''}`}
+                            />
+                          </button>
+                        </div>
+                      </div>
+
+                      {expandedRequest === req.id && (
+                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                          <p className="text-sm font-medium text-gray-700 mb-1">Description</p>
+                          <p className="text-sm text-gray-600 whitespace-pre-wrap">{req.description}</p>
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'queue' && (
+      <div>
       <div className="flex gap-2 mb-6">
         {(['ALL', 'AGENT', 'SKILL'] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             className={`px-3 py-1.5 rounded-md text-sm font-medium ${
-              filter === f 
-                ? 'bg-indigo-600 text-white' 
+              filter === f
+                ? 'bg-indigo-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
@@ -254,6 +451,8 @@ export default function AdminDashboard() {
           </ul>
         )}
       </div>
+      </div>
+      )}
     </div>
   );
 }
