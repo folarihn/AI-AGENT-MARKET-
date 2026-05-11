@@ -1,44 +1,38 @@
 'use client';
 
-import { createConfig, http } from 'wagmi/config';
-import { mainnet, sepolia } from 'wagmi/chains';
-import { injected } from 'wagmi/connectors';
+import { createConfig, http } from 'wagmi';
+import { injected, metaMask, walletConnect } from 'wagmi/connectors';
+import type { Chain } from 'viem';
 
-const arcTestnet = {
-  id: 5042002,
+export const ARC_CHAIN_ID     = 5042002;
+export const ARC_RPC_URL      = 'https://rpc.testnet.arc.network';
+export const ARC_EXPLORER_URL = 'https://testnet.arcscan.app';
+
+export const arcTestnet = {
+  id: ARC_CHAIN_ID,
   name: 'Arc Testnet',
-  nativeCurrency: {
-    decimals: 6,
-    name: 'USDC',
-    symbol: 'USDC',
-  },
+  nativeCurrency: { decimals: 6, name: 'USDC', symbol: 'USDC' },
   rpcUrls: {
-    default: {
-      http: ['https://rpc.testnet.arc.network'],
-    },
-    public: {
-      http: ['https://rpc.testnet.arc.network'],
-    },
+    default: { http: [ARC_RPC_URL] },
+    public:  { http: [ARC_RPC_URL] },
   },
   blockExplorers: {
-    default: {
-      name: 'ArcScan',
-      url: 'https://testnet.arcscan.app',
-    },
+    default: { name: 'ArcScan', url: ARC_EXPLORER_URL },
   },
   testnet: true,
-} as const;
+} as const satisfies Chain;
+
+const wcProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
 
 export const config = createConfig({
-  chains: [mainnet, sepolia, arcTestnet],
-  connectors: [injected()],
+  chains: [arcTestnet],
+  connectors: [
+    injected(),
+    metaMask(),
+    ...(wcProjectId ? [walletConnect({ projectId: wcProjectId })] : []),
+  ],
   transports: {
-    [mainnet.id]: http(),
-    [sepolia.id]: http(),
-    [arcTestnet.id]: http('https://rpc.testnet.arc.network'),
+    [arcTestnet.id]: http(ARC_RPC_URL),
   },
+  ssr: true,
 });
-
-export const ARC_CHAIN_ID = 5042002;
-export const ARC_RPC_URL = 'https://rpc.testnet.arc.network';
-export const ARC_EXPLORER_URL = 'https://testnet.arcscan.app';
