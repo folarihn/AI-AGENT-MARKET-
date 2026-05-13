@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/dashboard/creator/submit)",
+      "Bash(kill 7646)",
+      "Bash(npm run *)",
+      "Bash(echo \"Started PID $!\")",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(pkill -f \"next-server\")",
+      "Bash(echo \"PID $!\")",
+      "Bash(node -e \"const s = require\\('siwe'\\); console.log\\(Object.keys\\(s\\).slice\\(0,10\\)\\)\")",
+      "Bash(node -e \"const s = require\\('siwe'\\); console.log\\(Object.keys\\(s\\)\\)\")"
+    ],
+    "additionalDirectories": [
+      "/Users/macbook/AI-AGENT-MARKET-/marketplace-app/src/app/dashboard/creator"
+    ]
+  }
+}

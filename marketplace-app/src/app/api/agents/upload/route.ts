@@ -104,13 +104,13 @@ export async function POST(req: NextRequest) {
         agentJsonContent = JSON.parse(content || '{}');
       }
 
-      name = agentJsonContent.name;
-      displayName = metadata.displayName || agentJsonContent.display_name || agentJsonContent.name;
-      description = metadata.description || agentJsonContent.description;
-      version = agentJsonContent.version;
-      tags = metadata.tags || agentJsonContent.tags || [];
+      name = agentJsonContent.name as string;
+      displayName = metadata.displayName || (agentJsonContent.display_name as string) || (agentJsonContent.name as string);
+      description = metadata.description || (agentJsonContent.description as string);
+      version = agentJsonContent.version as string;
+      tags = metadata.tags || (agentJsonContent.tags as string[]) || [];
 
-      const permSet = new Set((agentJsonContent.permissions || []).map((p: string) => p.toLowerCase()));
+      const permSet = new Set(((agentJsonContent.permissions as string[]) || []).map((p: string) => p.toLowerCase()));
       permissions = {
         network: permSet.has('network'),
         filesystem: permSet.has('filesystem'),
@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
 
     const newAsset = await db.agents.create({
       slug: name,
-      itemType,
+      itemType: assetType,
       name,
       displayName,
       description,

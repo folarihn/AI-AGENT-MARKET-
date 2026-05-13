@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import CursorGradient from '@/components/CursorGradient';
 import { HeroConnectButton } from '@/components/HeroConnectButton';
+import FlipText from '@/components/FlipText';
 import {
   ShieldCheck,
   Search,
@@ -46,7 +47,7 @@ export default function Home() {
               marginBottom: '16px',
             }}
           >
-            Safe, Verified <span style={{ color: '#6a5acd' }}>AI Agents</span>
+            Safe, Verified <FlipText />
             <br />
             for your Workflow<span style={{ color: '#6a5acd' }}>.</span>
           </h1>
@@ -68,7 +69,7 @@ export default function Home() {
           {/* CTA Buttons */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <HeroConnectButton />
-            <Link href="/dashboard/creator" className="btn-secondary">
+            <Link href="/dashboard/creator/submit" className="btn-secondary">
               Submit an Agent
               <span className="btn-icon">
                 <Code size={14} />

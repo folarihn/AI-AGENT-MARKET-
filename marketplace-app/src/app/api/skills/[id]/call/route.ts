@@ -182,7 +182,9 @@ async function fetchSkillZip(storagePath: string): Promise<Buffer> {
 }
 
 async function extractZip(zipBuffer: Buffer, destDir: string): Promise<void> {
-  const { execAsync } = await import('util');
+  const { exec } = await import('child_process');
+  const { promisify } = await import('util');
+  const execAsync = promisify(exec);
   const zipPath = join(destDir, 'package.zip');
   
   writeFileSync(zipPath, zipBuffer);

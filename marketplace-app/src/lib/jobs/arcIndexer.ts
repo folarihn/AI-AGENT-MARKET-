@@ -1,4 +1,4 @@
-import { createPublicClient, http, getContractEvents } from 'viem';
+import { createPublicClient, http } from 'viem';
 import { prisma } from '@/lib/prisma';
 import { ARC_CHAIN_ID, ARC_RPC_URL } from '@/lib/wagmi';
 
@@ -72,12 +72,12 @@ async function fetchEvents(fromBlock: bigint, toBlock: bigint): Promise<EventLog
       agentId: (log.args.agentId as string).toLowerCase(),
       buyer: (log.args.buyer as string).toLowerCase(),
       creator: (log.args.creator as string).toLowerCase(),
-      priceUSDC: log.args.priceUSDC,
-      platformFee: log.args.platformFee,
-      royaltyFee: log.args.royaltyFee,
+      priceUSDC: (log.args.priceUSDC ?? 0n) as bigint,
+      platformFee: (log.args.platformFee ?? 0n) as bigint,
+      royaltyFee: (log.args.royaltyFee ?? 0n) as bigint,
       transactionHash: log.transactionHash as string,
-      blockNumber: log.blockNumber,
-      logIndex: log.logIndex,
+      blockNumber: log.blockNumber as bigint,
+      logIndex: log.logIndex as number,
     }));
   } catch (error) {
     console.error('Failed to fetch events:', error);

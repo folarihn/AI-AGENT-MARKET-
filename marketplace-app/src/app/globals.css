@@ -692,3 +692,30 @@ body {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+/* ── Flip text animation ── */
+@keyframes flipOut {
+  0%   { transform: rotateX(0deg);   opacity: 1; }
+  100% { transform: rotateX(90deg);  opacity: 0; }
+}
+
+@keyframes flipIn {
+  0%   { transform: rotateX(-90deg); opacity: 0; }
+  100% { transform: rotateX(0deg);   opacity: 1; }
+}
+
+.flip-text {
+  display: inline-block;
+  color: #6a5acd;
+  transform-origin: center center;
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+}
+
+.flip-text.flip-out {
+  animation: flipOut 0.35s cubic-bezier(0.55, 0, 1, 0.45) forwards;
+}
+
+.flip-text.flip-in {
+  animation: flipIn 0.35s cubic-bezier(0, 0.55, 0.45, 1) forwards;
+}

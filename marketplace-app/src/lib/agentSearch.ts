@@ -208,11 +208,6 @@ export async function searchAgents(params: AgentSearchParams): Promise<AgentSear
     filterParams.push(itemType);
     nextParam += 1;
   }
-  if (itemType !== 'ALL') {
-    countsFilters.push(`AND a."itemType" = $${countsNext}::"ItemType"`);
-    countsParams.push(itemType as unknown as number);
-    countsNext += 1;
-  }
   if (priceMin !== null) {
     filters.push(`AND a."price" >= $${nextParam}`);
     filterParams.push(priceMin);
@@ -269,6 +264,11 @@ export async function searchAgents(params: AgentSearchParams): Promise<AgentSear
   let countsNext = 2;
   const countsFilters: string[] = [];
   const countsParams: Array<number> = [];
+  if (itemType !== 'ALL') {
+    countsFilters.push(`AND a."itemType" = $${countsNext}::"ItemType"`);
+    countsParams.push(itemType as unknown as number);
+    countsNext += 1;
+  }
   if (priceMin !== null) {
     countsFilters.push(`AND a."price" >= $${countsNext}`);
     countsParams.push(priceMin);

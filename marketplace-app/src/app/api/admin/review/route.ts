@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { createWalletClient, http } from 'viem';
+import { createPublicClient, createWalletClient, http } from 'viem';
 import { ARC_CHAIN_ID, ARC_RPC_URL } from '@/lib/wagmi';
 
 const ESCROW_ADDRESS = process.env.NEXT_PUBLIC_ESCROW_ADDRESS;
@@ -55,24 +55,34 @@ export async function POST(req: NextRequest) {
     if (action === 'APPROVE' && agent.itemType === 'SKILL' && agent.pricingModel === 'PER_CALL') {
       if (ESCROW_ADDRESS && PLATFORM_PRIVATE_KEY) {
         try {
+          const creator = await prisma.user.findUnique({
+            where: { id: agent.creatorId },
+            select: { walletAddress: true },
+          });
+          const creatorAddress = (creator?.walletAddress ?? '0x0000000000000000000000000000000000000000') as `0x${string}`;
+
+          const chain = {
+            id: ARC_CHAIN_ID,
+            name: 'Arc Testnet',
+            nativeCurrency: { decimals: 6, name: 'USDC', symbol: 'USDC' },
+            rpcUrls: { default: { http: [ARC_RPC_URL] }, public: { http: [ARC_RPC_URL] } },
+          } as const;
+
+          const publicClient = createPublicClient({ chain, transport: http(ARC_RPC_URL) });
           const walletClient = createWalletClient({
-            chain: {
-              id: ARC_CHAIN_ID,
-              name: 'Arc Testnet',
-              nativeCurrency: { decimals: 6, name: 'USDC', symbol: 'USDC' },
-              rpcUrls: { default: { http: [ARC_RPC_URL] }, public: { http: [ARC_RPC_URL] } },
-            },
+            chain,
             transport: http(ARC_RPC_URL),
             account: PLATFORM_PRIVATE_KEY as `0x${string}`,
           });
 
-          const pricePerCallRaw = BigInt(Number(agent.price) * 1_000_000);
+          const pricePerCallRaw = BigInt(Math.round(Number(agent.price) * 1_000_000));
 
-          const { request } = await walletClient.simulateContract({
+          const { request } = await publicClient.simulateContract({
             address: ESCROW_ADDRESS as `0x${string}`,
             abi: ESCROW_ABI,
             functionName: 'registerSkill',
-            args: [agentId as `0x${string}`, agent.creatorAddress as `0x${string}`, pricePerCallRaw],
+            args: [agentId as `0x${string}`, creatorAddress, pricePerCallRaw],
+            account: PLATFORM_PRIVATE_KEY as `0x${string}`,
           });
 
           const hash = await walletClient.writeContract(request);

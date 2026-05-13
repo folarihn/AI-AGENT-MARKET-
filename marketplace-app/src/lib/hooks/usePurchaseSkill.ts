@@ -62,7 +62,7 @@ export function usePurchaseSkill(skillId: string, priceUSDC: number) {
       },
     ],
     functionName: 'allowance',
-    args: address && MARKETPLACE_ADDRESS ? [address, MARKETPLACE_ADDRESS] : undefined,
+    args: address && MARKETPLACE_ADDRESS ? [address, MARKETPLACE_ADDRESS as `0x${string}`] : undefined,
     chainId: ARC_CHAIN_ID,
   });
 
@@ -79,7 +79,8 @@ export function usePurchaseSkill(skillId: string, priceUSDC: number) {
     chainId: ARC_CHAIN_ID,
   });
 
-  const needsApproval = !usdcAllowance || (usdcBalance as bigint) < BigInt(priceUSDC) || (usdcAllowance as bigint) < BigInt(priceUSDC);
+  const price = BigInt(priceUSDC);
+  const needsApproval = !usdcAllowance || (usdcBalance as unknown as bigint ?? 0n) < price || (usdcAllowance as unknown as bigint) < price;
 
   const purchase = useCallback(async () => {
     if (!address || !MARKETPLACE_ADDRESS) {
@@ -105,7 +106,7 @@ export function usePurchaseSkill(skillId: string, priceUSDC: number) {
           address: USDC_ADDRESS as `0x${string}`,
           abi: USDC_ABI,
           functionName: 'approve',
-          args: [MARKETPLACE_ADDRESS, toHex(BigInt(priceUSDC) * 10n ** 12n)],
+          args: [MARKETPLACE_ADDRESS as `0x${string}`, BigInt(priceUSDC) * 10n ** 12n],
           chainId: ARC_CHAIN_ID,
         });
       } catch (e) {
@@ -119,7 +120,7 @@ export function usePurchaseSkill(skillId: string, priceUSDC: number) {
           address: MARKETPLACE_ADDRESS as `0x${string}`,
           abi: MARKETPLACE_ABI,
           functionName: 'purchaseAgent',
-          args: [toHex(BigInt(skillId))],
+          args: [skillId as `0x${string}`],
           chainId: ARC_CHAIN_ID,
         });
       } catch (e) {

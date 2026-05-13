@@ -113,6 +113,7 @@ function prismaAgentToApp(agent: PrismaAgent & { itemType?: string }): Agent {
       filesystem: agent.permissionsFilesystem,
       subprocess: (agent as unknown as { permissionsSubprocess?: boolean }).permissionsSubprocess ?? false,
     },
+    pricingModel: (agent as unknown as { pricingModel?: string }).pricingModel as 'FREE' | 'ONE_TIME' | 'PER_CALL' | undefined,
   };
 }
 
@@ -161,8 +162,8 @@ export const db = {
           pricingModel: data.pricingModel || 'ONE_TIME',
           pricePerCall: data.pricePerCall != null ? new Prisma.Decimal(data.pricePerCall) : null,
           runtime: data.runtime ?? null,
-          inputs: data.inputs ?? null,
-          outputs: data.outputs ?? null,
+          inputs: data.inputs ?? Prisma.JsonNull,
+          outputs: data.outputs ?? Prisma.JsonNull,
         },
       });
 
