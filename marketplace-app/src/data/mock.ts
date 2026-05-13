@@ -35,6 +35,7 @@ export interface Agent {
     filesystem: boolean;
     subprocess?: boolean;
   };
+  pricingModel?: 'FREE' | 'ONE_TIME' | 'PER_CALL';
 }
 
 export const MOCK_USERS: User[] = [
