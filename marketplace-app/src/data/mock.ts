@@ -8,7 +8,7 @@ export interface User {
   isVerified: boolean;
 }
 
-export type AgentStatus = 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED';
+export type AgentStatus = 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED' | 'COMING_SOON';
 
 export interface Agent {
   id: string;

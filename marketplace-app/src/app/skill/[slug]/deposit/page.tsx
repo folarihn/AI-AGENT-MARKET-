@@ -2,7 +2,8 @@ import { notFound } from 'next/navigation';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { createPublicClient, http } from 'viem';
-import { ARC_CHAIN_ID, ARC_RPC_URL, USDC_ADDRESS } from '@/lib/wagmi';
+import { ARC_CHAIN_ID, ARC_RPC_URL } from '@/lib/wagmi';
+import { USDC_ADDRESS } from '@/lib/arc/config';
 import DepositClient from './DepositClient';
 
 const ESCROW_ABI = [

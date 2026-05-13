@@ -72,12 +72,12 @@ async function fetchEvents(fromBlock: bigint, toBlock: bigint): Promise<EventLog
       agentId: (log.args.agentId as string).toLowerCase(),
       buyer: (log.args.buyer as string).toLowerCase(),
       creator: (log.args.creator as string).toLowerCase(),
-      priceUSDC: (log.args.priceUSDC ?? 0n) as bigint,
-      platformFee: (log.args.platformFee ?? 0n) as bigint,
-      royaltyFee: (log.args.royaltyFee ?? 0n) as bigint,
+      priceUSDC: log.args.priceUSDC ?? 0n,
+      platformFee: log.args.platformFee ?? 0n,
+      royaltyFee: log.args.royaltyFee ?? 0n,
       transactionHash: log.transactionHash as string,
-      blockNumber: log.blockNumber as bigint,
-      logIndex: log.logIndex as number,
+      blockNumber: log.blockNumber,
+      logIndex: log.logIndex,
     }));
   } catch (error) {
     console.error('Failed to fetch events:', error);

@@ -3,7 +3,8 @@
 import { useState, useCallback } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSwitchChain, useReadContract } from 'wagmi';
 import { toHex } from 'viem';
-import { config, ARC_CHAIN_ID, USDC_ADDRESS, ARC_EXPLORER_URL } from '@/lib/wagmi';
+import { config, ARC_CHAIN_ID, ARC_EXPLORER_URL } from '@/lib/wagmi';
+import { USDC_ADDRESS } from '@/lib/arc/config';
 import type { PurchaseState } from '@/lib/arc/types';
 
 const ESCROW_ADDRESS = process.env.NEXT_PUBLIC_ESCROW_ADDRESS as string | undefined;

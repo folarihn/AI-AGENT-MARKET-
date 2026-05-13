@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/SafeERC20.sol";
-import { Ownable } from "openzeppelin-contracts/contracts/access/Ownable.sol";
-import { Pausable } from "openzeppelin-contracts/contracts/utils/Pausable.sol";
-import { ReentrancyGuard } from "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract AgentiSkillEscrow is Ownable, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;

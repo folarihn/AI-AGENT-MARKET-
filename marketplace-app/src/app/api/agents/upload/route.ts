@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { storage } from '@/lib/storage';
 import { scanner } from '@/lib/scanner';
 import { detectAssetTypeAndValidate, type AssetType, type SkillManifest } from '@/lib/skills/validation';
-import { AgentStatus } from '@/data/mock';
+import { AgentStatus } from '@prisma/client';
 import { auth } from '@/auth';
 
 type PricingModel = 'FREE' | 'ONE_TIME' | 'PER_CALL';
@@ -104,13 +104,14 @@ export async function POST(req: NextRequest) {
         agentJsonContent = JSON.parse(content || '{}');
       }
 
-      name = agentJsonContent.name as string;
-      displayName = metadata.displayName || (agentJsonContent.display_name as string) || (agentJsonContent.name as string);
-      description = metadata.description || (agentJsonContent.description as string);
-      version = agentJsonContent.version as string;
-      tags = metadata.tags || (agentJsonContent.tags as string[]) || [];
+      const str = (v: unknown) => (typeof v === 'string' ? v : '');
+      name = str(agentJsonContent.name);
+      displayName = metadata.displayName || str(agentJsonContent.display_name) || str(agentJsonContent.name);
+      description = metadata.description || str(agentJsonContent.description);
+      version = str(agentJsonContent.version);
+      tags = metadata.tags || (Array.isArray(agentJsonContent.tags) ? agentJsonContent.tags as string[] : []);
 
-      const permSet = new Set(((agentJsonContent.permissions as string[]) || []).map((p: string) => p.toLowerCase()));
+      const permSet = new Set((Array.isArray(agentJsonContent.permissions) ? agentJsonContent.permissions as string[] : []).map((p: string) => p.toLowerCase()));
       permissions = {
         network: permSet.has('network'),
         filesystem: permSet.has('filesystem'),
@@ -147,9 +148,11 @@ export async function POST(req: NextRequest) {
     const readmeFile = Object.keys(zip.files).find((n) => n.endsWith('README.md'));
     const readmeText = readmeFile ? await zip.file(readmeFile)?.async('string') : undefined;
 
+    const itemType: 'AGENT' | 'SKILL' = assetType === 'SKILL' ? 'SKILL' : 'AGENT';
+
     const newAsset = await db.agents.create({
       slug: name,
-      itemType: assetType,
+      itemType,
       name,
       displayName,
       description,

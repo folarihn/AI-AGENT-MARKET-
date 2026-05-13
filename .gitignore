@@ -1,0 +1,8 @@
+contracts/.env
+contracts/artifacts/
+contracts/cache/
+contracts/node_modules/
+contracts/scripts/deployments/
+marketplace-app/.env
+marketplace-app/.env.local
+marketplace-app/node_modules/

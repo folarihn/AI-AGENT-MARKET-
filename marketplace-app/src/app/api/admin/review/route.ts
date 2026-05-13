@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { createPublicClient, createWalletClient, http } from 'viem';
+import { createWalletClient, createPublicClient, http } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
 import { ARC_CHAIN_ID, ARC_RPC_URL } from '@/lib/wagmi';
 
 const ESCROW_ADDRESS = process.env.NEXT_PUBLIC_ESCROW_ADDRESS;
@@ -42,7 +43,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
 
-    const agent = await db.agents.findById(agentId);
+    const agent = await prisma.agent.findUnique({
+      where: { id: agentId },
+      include: { creator: { select: { walletAddress: true } } },
+    });
     if (!agent) {
       return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
     }
@@ -55,34 +59,27 @@ export async function POST(req: NextRequest) {
     if (action === 'APPROVE' && agent.itemType === 'SKILL' && agent.pricingModel === 'PER_CALL') {
       if (ESCROW_ADDRESS && PLATFORM_PRIVATE_KEY) {
         try {
-          const creator = await prisma.user.findUnique({
-            where: { id: agent.creatorId },
-            select: { walletAddress: true },
-          });
-          const creatorAddress = (creator?.walletAddress ?? '0x0000000000000000000000000000000000000000') as `0x${string}`;
-
-          const chain = {
+          const arcChain = {
             id: ARC_CHAIN_ID,
             name: 'Arc Testnet',
             nativeCurrency: { decimals: 6, name: 'USDC', symbol: 'USDC' },
-            rpcUrls: { default: { http: [ARC_RPC_URL] }, public: { http: [ARC_RPC_URL] } },
+            rpcUrls: { default: { http: [ARC_RPC_URL] as const }, public: { http: [ARC_RPC_URL] as const } },
           } as const;
 
-          const publicClient = createPublicClient({ chain, transport: http(ARC_RPC_URL) });
-          const walletClient = createWalletClient({
-            chain,
-            transport: http(ARC_RPC_URL),
-            account: PLATFORM_PRIVATE_KEY as `0x${string}`,
-          });
+          const account = privateKeyToAccount(PLATFORM_PRIVATE_KEY as `0x${string}`);
 
-          const pricePerCallRaw = BigInt(Math.round(Number(agent.price) * 1_000_000));
+          const publicClient = createPublicClient({ chain: arcChain, transport: http(ARC_RPC_URL) });
+          const walletClient = createWalletClient({ chain: arcChain, transport: http(ARC_RPC_URL), account });
+
+          const pricePerCallRaw = BigInt(Math.round(Number(agent.pricePerCall ?? 0) * 1_000_000));
+          const creatorAddress = (agent.creator.walletAddress ?? '0x0000000000000000000000000000000000000000') as `0x${string}`;
 
           const { request } = await publicClient.simulateContract({
             address: ESCROW_ADDRESS as `0x${string}`,
             abi: ESCROW_ABI,
             functionName: 'registerSkill',
             args: [agentId as `0x${string}`, creatorAddress, pricePerCallRaw],
-            account: PLATFORM_PRIVATE_KEY as `0x${string}`,
+            account,
           });
 
           const hash = await walletClient.writeContract(request);
@@ -98,9 +95,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    await db.agents.update(agentId, {
-      status: newStatus,
-      verified: action === 'APPROVE',
+    await prisma.agent.update({
+      where: { id: agentId },
+      data: {
+        status: newStatus as 'PUBLISHED' | 'REJECTED',
+        verified: action === 'APPROVE',
+      },
     });
 
     await db.audit.create({

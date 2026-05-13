@@ -62,7 +62,7 @@ export function usePurchaseAgent(agentId: string, priceUSDC: number) {
       },
     ],
     functionName: 'allowance',
-    args: address && MARKETPLACE_ADDRESS ? [address, MARKETPLACE_ADDRESS as `0x${string}`] : undefined,
+    args: address && MARKETPLACE_ADDRESS ? [address, MARKETPLACE_ADDRESS as `0x${string}`] as const : undefined,
     chainId: ARC_CHAIN_ID,
   });
 
@@ -79,8 +79,7 @@ export function usePurchaseAgent(agentId: string, priceUSDC: number) {
     chainId: ARC_CHAIN_ID,
   });
 
-  const price = BigInt(priceUSDC);
-  const needsApproval = !usdcAllowance || (usdcBalance as unknown as bigint ?? 0n) < price || (usdcAllowance as unknown as bigint) < price;
+  const needsApproval = !usdcAllowance || (BigInt((usdcBalance as bigint | undefined) ?? 0n)) < BigInt(priceUSDC) || (BigInt((usdcAllowance as bigint | undefined) ?? 0n)) < BigInt(priceUSDC);
 
   const purchase = useCallback(async () => {
     if (!address || !MARKETPLACE_ADDRESS) {
@@ -106,7 +105,7 @@ export function usePurchaseAgent(agentId: string, priceUSDC: number) {
           address: USDC_ADDRESS as `0x${string}`,
           abi: USDC_ABI,
           functionName: 'approve',
-          args: [MARKETPLACE_ADDRESS as `0x${string}`, BigInt(priceUSDC) * 10n ** 12n],
+          args: [MARKETPLACE_ADDRESS as `0x${string}`, BigInt(priceUSDC) * 10n ** 6n],
           chainId: ARC_CHAIN_ID,
         });
       } catch (e) {

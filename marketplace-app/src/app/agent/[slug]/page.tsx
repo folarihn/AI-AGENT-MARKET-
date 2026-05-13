@@ -3,8 +3,7 @@ import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
 import AgentDetailClient, { type AgentDetail } from './AgentDetailClient';
 
-export const revalidate = 3600;
-export const dynamicParams = true;
+export const dynamic = 'force-dynamic';
 
 function siteUrl() {
   const raw = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || 'http://localhost:3001';
@@ -57,14 +56,6 @@ async function getAgentBySlug(slug: string) {
   return agent;
 }
 
-export async function generateStaticParams() {
-  if (!canUseDb()) return [];
-  const agents = await prisma.agent.findMany({
-    where: { status: 'PUBLISHED' },
-    select: { slug: true },
-  });
-  return agents.map((a) => ({ slug: a.slug }));
-}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   if (!canUseDb()) return {};
@@ -165,6 +156,7 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ sl
     updatedAt: agent.updatedAt.toISOString().slice(0, 10),
     verified: agent.verified,
     price: Number(agent.price.toString()),
+    status: agent.status,
     readmeText: agent.readmeText,
     permissions: { network: agent.permissionsNetwork, filesystem: agent.permissionsFilesystem, subprocess: agent.permissionsSubprocess },
   };

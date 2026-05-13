@@ -1,66 +1,41 @@
-import { ethers } from "ethers";
-import { writeFileSync, existsSync, mkdirSync } from "fs";
-import { join, dirname } from "path";
+import hre from "hardhat";
+import { writeFileSync, mkdirSync, existsSync } from "fs";
+import { join } from "path";
 
 const ARC_USDC_ADDRESS = "0x3600000000000000000000000000000000000000";
 const ARC_EXPLORER = "https://testnet.arcscan.app";
 
-interface Deployment {
-  network: string;
-  chainId: number;
-  usdc: string;
-  escrow: string;
-  deployer: string;
-  timestamp: string;
-  transactionHash: string;
-}
-
 async function main() {
-  const provider = new ethers.JsonRpcProvider("https://rpc.testnet.arc.network");
-  const wallet = new ethers.Wallet(process.env.ACCOUNT_PRIVATE_KEY!, provider);
-  
-  console.log("Deployer:", wallet.address);
+  const [deployer] = await hre.ethers.getSigners();
+  console.log("Deployer:", deployer.address);
   console.log("Network: Arc Testnet (chainId: 5042002)");
 
   console.log("\nDeploying AgentiSkillEscrow...");
-  const escrowFactory = await ethers.getContractFactory("AgentiSkillEscrow", wallet);
-  const escrow = await escrowFactory.deploy(ARC_USDC_ADDRESS, wallet.address);
+  const EscrowFactory = await hre.ethers.getContractFactory("AgentiSkillEscrow");
+  const escrow = await EscrowFactory.deploy(ARC_USDC_ADDRESS, deployer.address);
   await escrow.waitForDeployment();
   const escrowAddress = await escrow.getAddress();
   console.log("AgentiSkillEscrow:", escrowAddress);
 
-  const deployment: Deployment = {
+  const deployment = {
     network: "arc-testnet",
     chainId: 5042002,
     usdc: ARC_USDC_ADDRESS,
     escrow: escrowAddress,
-    deployer: wallet.address,
+    deployer: deployer.address,
     timestamp: new Date().toISOString(),
     transactionHash: escrow.deploymentTransaction()?.hash || "",
   };
 
-  const outputDir = join(dirname(__file__), "deployments", "arc-testnet");
-  if (!existsSync(outputDir)) {
-    mkdirSync(outputDir, { recursive: true });
-  }
-
-  writeFileSync(
-    join(outputDir, "escrow-deployment.json"),
-    JSON.stringify(deployment, null, 2)
-  );
+  const outputDir = join(__dirname, "deployments", "arc-testnet");
+  if (!existsSync(outputDir)) mkdirSync(outputDir, { recursive: true });
+  writeFileSync(join(outputDir, "escrow-deployment.json"), JSON.stringify(deployment, null, 2));
 
   console.log("\n=== Deployment Complete ===");
-  console.log(`USDC Token: ${ARC_USDC_ADDRESS}`);
-  console.log(`Escrow: ${deployment.escrow}`);
-  console.log(`\nExplorer: ${ARC_EXPLORER}/address/${escrowAddress}`);
-
-  console.log("\n=== Next Steps ===");
-  console.log(`1. Fund escrow with testnet USDC for testing`);
-  console.log(`2. Register per-call skills via registerSkill(bytes32, address, uint256)`);
-  console.log(`3. Set NEXT_PUBLIC_ESCROW_ADDRESS=${escrowAddress} in .env.local`);
+  console.log(`AgentiSkillEscrow: ${escrowAddress}`);
+  console.log(`Explorer: ${ARC_EXPLORER}/address/${escrowAddress}`);
+  console.log("\n=== Add this to .env.local ===");
+  console.log(`NEXT_PUBLIC_ESCROW_ADDRESS=${escrowAddress}`);
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+main().catch((e) => { console.error(e); process.exit(1); });

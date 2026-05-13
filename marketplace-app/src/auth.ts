@@ -157,7 +157,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.sub;
         const role = (token as unknown as { role?: AppUserRole }).role ?? 'BUYER';
         session.user.role = role;
-        session.user.walletAddress = (token as unknown as { walletAddress?: string }).walletAddress;
+        (session.user as unknown as { walletAddress?: string }).walletAddress = (token as unknown as { walletAddress?: string }).walletAddress;
       }
       return session;
     },

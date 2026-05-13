@@ -39,8 +39,6 @@ export const arcChain: ArcChain = {
     },
   },
   testnet: true,
-  formatters: undefined,
-  serializers: undefined,
 };
 
 export type PurchaseState = 

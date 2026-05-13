@@ -72,6 +72,18 @@ export function Navbar() {
               Marketplace
             </Link>
             <Link
+              href="/collections"
+              style={{
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                color: '#4b5563',
+                textDecoration: 'none',
+                transition: 'color 0.2s',
+              }}
+            >
+              Collections
+            </Link>
+            <Link
               href="#how-it-works"
               style={{
                 fontSize: '0.875rem',
@@ -96,6 +108,21 @@ export function Navbar() {
                 }}
               >
                 Creator Dashboard
+              </Link>
+            )}
+
+            {user?.role === 'CREATOR' && (
+              <Link
+                href="/dashboard/creator/payouts"
+                style={{
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  color: '#4b5563',
+                  textDecoration: 'none',
+                  transition: 'color 0.2s',
+                }}
+              >
+                Payouts
               </Link>
             )}
 
