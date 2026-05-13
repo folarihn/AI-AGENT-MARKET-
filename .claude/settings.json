@@ -10,7 +10,13 @@
       "Bash(pkill -f \"next-server\")",
       "Bash(echo \"PID $!\")",
       "Bash(node -e \"const s = require\\('siwe'\\); console.log\\(Object.keys\\(s\\).slice\\(0,10\\)\\)\")",
-      "Bash(node -e \"const s = require\\('siwe'\\); console.log\\(Object.keys\\(s\\)\\)\")"
+      "Bash(node -e \"const s = require\\('siwe'\\); console.log\\(Object.keys\\(s\\)\\)\")",
+      "Bash(git fetch *)",
+      "Bash(git merge *)",
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ],
     "additionalDirectories": [
       "/Users/macbook/AI-AGENT-MARKET-/marketplace-app/src/app/dashboard/creator"
