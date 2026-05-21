@@ -3,20 +3,30 @@ import JSZip from 'jszip';
 import { db } from '@/lib/db';
 import { storage } from '@/lib/storage';
 import { scanner } from '@/lib/scanner';
-import { detectAssetTypeAndValidate, type AssetType, type SkillManifest } from '@/lib/skills/validation';
+import { detectAssetTypeAndValidate, type SkillManifest } from '@/lib/skills/validation';
 import { AgentStatus } from '@prisma/client';
 import { auth } from '@/auth';
+import { rateLimit } from '@/lib/rateLimit';
 
 type PricingModel = 'FREE' | 'ONE_TIME' | 'PER_CALL';
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 10 uploads per creator per hour
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     if (session.user.role !== 'CREATOR') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const rl = rateLimit('upload', session.user.id, { limit: 10, windowMs: 60 * 60 * 1000 });
+    if (!rl.ok) {
+      return NextResponse.json({ error: 'Too many uploads. Please wait before trying again.' }, {
+        status: 429,
+        headers: { 'Retry-After': String(Math.ceil(rl.retryAfterMs / 1000)) },
+      });
     }
 
     const formData = await req.formData();
@@ -39,9 +49,9 @@ export async function POST(req: NextRequest) {
     if (errors.length > 0) {
       const criticalErrors = errors.filter(e => e.severity === 'ERROR');
       if (criticalErrors.length > 0) {
-        return NextResponse.json({ 
-          error: 'Validation failed', 
-          details: criticalErrors.map(e => ({ rule: e.rule, detail: e.detail })) 
+        return NextResponse.json({
+          error: 'Validation failed',
+          details: criticalErrors.map(e => ({ rule: e.rule, detail: e.detail })),
         }, { status: 400 });
       }
     }
@@ -51,7 +61,7 @@ export async function POST(req: NextRequest) {
     }
 
     const zip = await JSZip.loadAsync(buffer);
-    const hasReadme = Object.keys(zip.files).some(name => name.endsWith('README.md'));
+    const hasReadme = Object.keys(zip.files).some(n => n.endsWith('README.md'));
 
     if (!hasReadme) {
       return NextResponse.json({ error: 'Package missing README.md' }, { status: 400 });
@@ -98,7 +108,7 @@ export async function POST(req: NextRequest) {
       }
     } else {
       let agentJsonContent: Record<string, unknown> = {};
-      const agentJsonFile = Object.keys(zip.files).find(name => name.endsWith('agent.json'));
+      const agentJsonFile = Object.keys(zip.files).find(n => n.endsWith('agent.json'));
       if (agentJsonFile) {
         const content = await zip.file(agentJsonFile)?.async('string');
         agentJsonContent = JSON.parse(content || '{}');
@@ -106,17 +116,37 @@ export async function POST(req: NextRequest) {
 
       const str = (v: unknown) => (typeof v === 'string' ? v : '');
       name = str(agentJsonContent.name);
-      displayName = metadata.displayName || str(agentJsonContent.display_name) || str(agentJsonContent.name);
-      description = metadata.description || str(agentJsonContent.description);
+      displayName =
+        (typeof metadata.displayName === 'string' && metadata.displayName.trim()
+          ? metadata.displayName.trim()
+          : str(agentJsonContent.display_name) || str(agentJsonContent.name));
+      description =
+        (typeof metadata.description === 'string' && metadata.description.trim()
+          ? metadata.description.trim()
+          : str(agentJsonContent.description));
       version = str(agentJsonContent.version);
-      tags = metadata.tags || (Array.isArray(agentJsonContent.tags) ? agentJsonContent.tags as string[] : []);
+      tags =
+        (Array.isArray(metadata.tags) ? metadata.tags.filter((t: unknown) => typeof t === 'string') : null) ??
+        (Array.isArray(agentJsonContent.tags) ? (agentJsonContent.tags as string[]) : []);
 
-      const permSet = new Set((Array.isArray(agentJsonContent.permissions) ? agentJsonContent.permissions as string[] : []).map((p: string) => p.toLowerCase()));
-      permissions = {
-        network: permSet.has('network'),
-        filesystem: permSet.has('filesystem'),
-        subprocess: permSet.has('subprocess'),
-      };
+      const rawPerms = agentJsonContent.permissions;
+      if (Array.isArray(rawPerms)) {
+        const permSet = new Set((rawPerms as string[]).map((p) => String(p).toLowerCase()));
+        permissions = {
+          network: permSet.has('network'),
+          filesystem: permSet.has('filesystem'),
+          subprocess: permSet.has('subprocess'),
+        };
+      } else if (rawPerms && typeof rawPerms === 'object') {
+        const p = rawPerms as Record<string, unknown>;
+        permissions = {
+          network: Boolean(p.network),
+          filesystem: Boolean(p.filesystem),
+          subprocess: Boolean(p.subprocess),
+        };
+      } else {
+        permissions = { network: false, filesystem: false, subprocess: false };
+      }
 
       pricingModel = 'ONE_TIME';
     }
@@ -137,21 +167,34 @@ export async function POST(req: NextRequest) {
 
     const advanced = await scanner.scanZip(zip, { archiveByteLength: buffer.byteLength });
     const scanResults = {
-      status: advanced.passed ? 'PASS' as const : 'FAIL' as const,
-      malwareClean: !advanced.findings.some(f => ['MALWARE_C2','DANGEROUS_EVAL','CHILD_PROCESS_EXEC'].includes(f.rule) && f.severity !== 'INFO'),
-      secretsFound: advanced.findings.filter(f => f.rule.startsWith('SECRET_')).map(f => `${f.rule} in ${f.file}`),
+      status: advanced.passed ? ('PASS' as const) : ('FAIL' as const),
+      malwareClean: !advanced.findings.some(
+        f => ['MALWARE_C2', 'DANGEROUS_EVAL', 'CHILD_PROCESS_EXEC'].includes(f.rule) && f.severity !== 'INFO'
+      ),
+      secretsFound: advanced.findings
+        .filter(f => f.rule.startsWith('SECRET_'))
+        .map(f => f.rule + ' in ' + f.file),
       disallowedFiles: advanced.findings.filter(f => f.rule === 'ALLOWLIST').map(f => f.file),
     };
 
     const initialStatus: AgentStatus = scanResults.status === 'PASS' ? 'PENDING_REVIEW' : 'REJECTED';
 
-    const readmeFile = Object.keys(zip.files).find((n) => n.endsWith('README.md'));
+    const readmeFile = Object.keys(zip.files).find(n => n.endsWith('README.md'));
     const readmeText = readmeFile ? await zip.file(readmeFile)?.async('string') : undefined;
 
     const itemType: 'AGENT' | 'SKILL' = assetType === 'SKILL' ? 'SKILL' : 'AGENT';
+    const rawSlugSource =
+      (typeof metadata.slug === 'string' && metadata.slug.trim()
+        ? metadata.slug.trim()
+        : displayName || name) || '';
+    const slugifiedName =
+      rawSlugSource
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || (itemType.toLowerCase() + '-' + Date.now());
 
     const newAsset = await db.agents.create({
-      slug: name,
+      slug: slugifiedName,
       itemType,
       name,
       displayName,
@@ -159,11 +202,12 @@ export async function POST(req: NextRequest) {
       category: normalizeCategory(metadata.category || 'OTHER'),
       tags,
       status: initialStatus,
-      price: assetType === 'SKILL' && pricingModel === 'ONE_TIME' 
-        ? (metadata.price || (manifest as SkillManifest)?.price_one_time || 0)
-        : (metadata.price || 0),
-      creatorId: creatorId,
-      creatorName: creatorName,
+      price:
+        assetType === 'SKILL' && pricingModel === 'ONE_TIME'
+          ? metadata.price || (manifest as SkillManifest)?.price_one_time || 0
+          : metadata.price || 0,
+      creatorId,
+      creatorName,
       version,
       readmeText: readmeText || undefined,
       permissions,
@@ -189,24 +233,24 @@ export async function POST(req: NextRequest) {
       action: 'UPLOAD',
       targetId: newAsset.id,
       actorId: creatorId,
-      details: `Uploaded ${assetType.toLowerCase()} version ${newAsset.version}. Scan: ${scanResults.status}. Storage: ${storagePath}`,
+      details: 'Uploaded ' + assetType.toLowerCase() + ' version ' + newAsset.version + '. Scan: ' + scanResults.status + '. Storage: ' + storagePath,
     });
-    
+
     if (initialStatus === 'REJECTED') {
       await db.audit.create({
         action: 'REJECT',
         targetId: newAsset.id,
         actorId: 'system',
-        details: `Auto-rejected: ${scanResults.secretsFound.length} secrets, ${scanResults.disallowedFiles.length} disallowed files.`,
+        details: 'Auto-rejected: ' + scanResults.secretsFound.length + ' secrets, ' + scanResults.disallowedFiles.length + ' disallowed files.',
       });
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       asset: newAsset,
       assetType,
       scanStatus: scanResults.status,
-      storagePath
+      storagePath,
     });
 
   } catch (error) {

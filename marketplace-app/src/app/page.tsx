@@ -152,7 +152,7 @@ export default function Home() {
                 }}
               >
                 <span style={{ fontSize: '1.0625rem', fontWeight: 700 }}>
-                  Backy's Spotlight
+                  Backy&apos;s Spotlight
                 </span>
               </div>
 
@@ -243,7 +243,7 @@ export default function Home() {
               Skills are the building blocks<span style={{ color: 'var(--accent)' }}>.</span> Agents are what you ship<span style={{ color: 'var(--accent)' }}>.</span>
             </h2>
             <p style={{ color: '#6b7280', fontSize: '1.125rem' }}>
-              Discover exactly what you need, whether it's a full workflow or a modular capability.
+              Discover exactly what you need, whether it&apos;s a full workflow or a modular capability.
             </p>
           </div>
 
@@ -357,7 +357,7 @@ export default function Home() {
                 marginBottom: '14px',
               }}
             >
-              Can't find what<br />you need?
+              Can&apos;t find what<br />you need?
             </h2>
             <p
               style={{

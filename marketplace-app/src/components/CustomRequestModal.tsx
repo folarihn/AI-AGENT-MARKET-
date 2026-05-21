@@ -166,7 +166,7 @@ export default function CustomRequestModal({ open, onClose }: Props) {
                 Request received!
               </h3>
               <p style={{ color: '#6b7280', lineHeight: 1.6, marginBottom: '24px' }}>
-                We've logged your request. Our creator community will review it and you'll hear back at <strong>{form.email}</strong>.
+                We&apos;ve logged your request. Our creator community will review it and you&apos;ll hear back at <strong>{form.email}</strong>.
               </p>
               <button
                 onClick={handleClose}

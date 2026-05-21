@@ -86,7 +86,7 @@ async function fetchEvents(fromBlock: bigint, toBlock: bigint): Promise<EventLog
 }
 
 async function findOrCreateUserByWallet(walletAddress: string): Promise<string> {
-  let user = await prisma.user.findFirst({
+  const user = await prisma.user.findFirst({
     where: { walletAddress: walletAddress.toLowerCase() },
   });
 

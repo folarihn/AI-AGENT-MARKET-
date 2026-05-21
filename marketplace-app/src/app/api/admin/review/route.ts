@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { createWalletClient, createPublicClient, http } from 'viem';
+import { createWalletClient, createPublicClient, http, keccak256, toBytes } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { ARC_CHAIN_ID, ARC_RPC_URL } from '@/lib/wagmi';
+import { sendEmail, agentApprovedEmail, agentRejectedEmail } from '@/lib/email';
 
 const ESCROW_ADDRESS = process.env.NEXT_PUBLIC_ESCROW_ADDRESS;
 const PLATFORM_PRIVATE_KEY = process.env.PLATFORM_PRIVATE_KEY;
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://agentmarket.dev';
 
 const ESCROW_ABI = [
   {
@@ -73,12 +75,13 @@ export async function POST(req: NextRequest) {
 
           const pricePerCallRaw = BigInt(Math.round(Number(agent.pricePerCall ?? 0) * 1_000_000));
           const creatorAddress = (agent.creator.walletAddress ?? '0x0000000000000000000000000000000000000000') as `0x${string}`;
+          const skillIdBytes32 = keccak256(toBytes(agentId));
 
           const { request } = await publicClient.simulateContract({
             address: ESCROW_ADDRESS as `0x${string}`,
             abi: ESCROW_ABI,
             functionName: 'registerSkill',
-            args: [agentId as `0x${string}`, creatorAddress, pricePerCallRaw],
+            args: [skillIdBytes32, creatorAddress, pricePerCallRaw],
             account,
           });
 
@@ -107,12 +110,38 @@ export async function POST(req: NextRequest) {
       action: action,
       targetId: agentId,
       actorId: session.user.id,
-      details: reason || `${action === 'APPROVE' ? 'Approved' : 'Rejected'} by admin` + 
-        (registrationTxHash ? ` (escrow: ${registrationTxHash})` : ''),
+      details: (reason || (action === 'APPROVE' ? 'Approved' : 'Rejected') + ' by admin') +
+        (registrationTxHash ? ' (escrow: ' + registrationTxHash + ')' : ''),
     });
 
-    return NextResponse.json({ 
-      success: true, 
+    // ── Email notification to creator ────────────────────────────────────────
+    try {
+      const creator = await prisma.user.findUnique({ where: { id: agent.creatorId } });
+      if (creator?.email) {
+        const template =
+          action === 'APPROVE'
+            ? agentApprovedEmail({
+                creatorName: creator.name || 'Creator',
+                agentName: agent.displayName,
+                agentSlug: agent.slug,
+                siteUrl: SITE_URL,
+              })
+            : agentRejectedEmail({
+                creatorName: creator.name || 'Creator',
+                agentName: agent.displayName,
+                reason: reason || undefined,
+                siteUrl: SITE_URL,
+              });
+
+        await sendEmail({ to: creator.email, ...template });
+      }
+    } catch (emailErr) {
+      // Email failures must not roll back the review action
+      console.error('Failed to send review notification email:', emailErr);
+    }
+
+    return NextResponse.json({
+      success: true,
       status: newStatus,
       escrowRegistrationFailed,
       registrationTxHash,

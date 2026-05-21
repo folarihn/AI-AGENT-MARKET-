@@ -120,7 +120,7 @@ export function SignInWithWalletButton() {
       )}
 
       <p className="text-xs text-gray-500 text-center mt-2">
-        You'll be redirected to the marketplace after signing
+        You&apos;ll be redirected to the marketplace after signing
       </p>
     </div>
   );

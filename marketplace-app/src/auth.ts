@@ -57,6 +57,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
     Credentials({
+      id: 'siwe',
       name: 'SIWE',
       credentials: {
         message: { label: 'Message', type: 'text' },
@@ -76,17 +77,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             where: { nonce: data.nonce },
           });
 
-          if (!nonceRecord) {
-            throw new Error('Invalid nonce');
-          }
-
-          if (nonceRecord.used) {
-            throw new Error('Nonce already used');
-          }
-
-          if (nonceRecord.expiresAt < new Date()) {
-            throw new Error('Nonce expired');
-          }
+          if (!nonceRecord) throw new Error('Invalid nonce');
+          if (nonceRecord.used) throw new Error('Nonce already used');
+          if (nonceRecord.expiresAt < new Date()) throw new Error('Nonce expired');
 
           await prisma.nonce.update({
             where: { nonce: data.nonce },

@@ -12,10 +12,7 @@ export function DashboardProfile() {
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -45,12 +42,10 @@ export function DashboardProfile() {
     window.location.href = '/';
   };
 
-  if (!mounted) return null;
-
   const isDark = theme === 'dark';
 
   return (
-    <div ref={menuRef} style={{ position: 'relative', padding: '0 12px' }}>
+    <div ref={menuRef} suppressHydrationWarning style={{ position: 'relative', padding: '0 12px' }}>
 
       {/* Theme toggle — always visible */}
       <button

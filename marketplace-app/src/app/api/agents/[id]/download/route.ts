@@ -23,15 +23,15 @@ export async function GET(
   }
 
   const isFree = agent.price === 0;
-  
+
   if (!isFree) {
     let hasNFTLicense = false;
     const walletAddress = (session.user as { walletAddress?: string }).walletAddress;
-    
+
     if (walletAddress) {
       hasNFTLicense = await checkNFTOwnership(walletAddress, agentId);
     }
-    
+
     const dbLicense = await db.licenses.check(session.user.id, agentId);
     const isCreator = agent.creatorId === session.user.id;
 
@@ -40,7 +40,11 @@ export async function GET(
     }
   }
 
-  await db.agents.update(agentId, { downloads: agent.downloads + 1 });
+  // Atomic increment avoids race conditions under concurrent downloads
+  await prisma.agent.update({
+    where: { id: agentId },
+    data: { downloads: { increment: 1 } },
+  });
 
   await prisma.auditLog.create({
     data: {
@@ -51,7 +55,7 @@ export async function GET(
     },
   });
 
-  const storagePath = `agents/${agentId}/${agent.version}/package.zip`;
+  const storagePath = 'agents/' + agentId + '/' + agent.version + '/package.zip';
   const url = await storage.getPresignedDownloadUrl(storagePath, 600);
   return NextResponse.redirect(url);
 }

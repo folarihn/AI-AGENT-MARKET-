@@ -129,7 +129,7 @@ async function executeSkillInSandbox(
     }
 
     let command: string;
-    let timeout = 30000;
+    const timeout = 30000;
 
     if (runtime === 'python3.11') {
       command = `cd "${tmpDir}" && python3 -c "import json; d=json.load(open('input.json')); exec(open('${entrypoint}').read())"`;

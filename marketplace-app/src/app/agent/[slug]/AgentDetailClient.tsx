@@ -100,7 +100,7 @@ function WaitlistBox({ agentId }: { agentId: string }) {
       {joined ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#86efac' }}>
           <CheckCircle size={16} />
-          <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>You're on the list!</span>
+          <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>You&apos;re on the list!</span>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

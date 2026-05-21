@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { createWalletClient, createPublicClient, http } from 'viem';
+import { createWalletClient, createPublicClient, http, keccak256, toBytes } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { ARC_CHAIN_ID, ARC_RPC_URL } from '@/lib/wagmi';
 
@@ -38,6 +38,7 @@ export async function POST(
   
   const skill = await prisma.agent.findUnique({
     where: { id: skillId, itemType: 'SKILL', pricingModel: 'PER_CALL' },
+    include: { creator: { select: { walletAddress: true } } },
   });
 
   if (!skill) {
@@ -61,13 +62,14 @@ export async function POST(
     const walletClient = createWalletClient({ chain: arcChain, transport: http(ARC_RPC_URL), account });
 
     const pricePerCallRaw = BigInt(Math.round(Number(skill.pricePerCall ?? skill.price) * 1_000_000));
-    const creatorAddr = (skill.creatorId ?? '0x0000000000000000000000000000000000000000') as `0x${string}`;
+    const creatorAddr = (skill.creator.walletAddress ?? '0x0000000000000000000000000000000000000000') as `0x${string}`;
+    const skillIdBytes32 = keccak256(toBytes(skillId));
 
     const { request: contractRequest } = await publicClient.simulateContract({
       address: ESCROW_ADDRESS as `0x${string}`,
       abi: ESCROW_ABI,
       functionName: 'registerSkill',
-      args: [skillId as `0x${string}`, creatorAddr, pricePerCallRaw],
+      args: [skillIdBytes32, creatorAddr, pricePerCallRaw],
       account,
     });
 
