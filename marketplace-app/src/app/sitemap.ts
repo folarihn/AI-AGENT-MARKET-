@@ -6,12 +6,21 @@ function siteUrl() {
   return raw.replace(/\/+$/, '');
 }
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (!process.env.DATABASE_URL) return [];
-  const agents = await prisma.agent.findMany({
-    where: { status: 'PUBLISHED' },
-    select: { slug: true, updatedAt: true },
-  });
+
+  let agents: Array<{ slug: string; updatedAt: Date }> = [];
+  try {
+    agents = await prisma.agent.findMany({
+      where: { status: 'PUBLISHED' },
+      select: { slug: true, updatedAt: true },
+    });
+  } catch {
+    return [];
+  }
 
   return agents.map((a) => ({
     url: `${siteUrl()}/agent/${a.slug}`,
