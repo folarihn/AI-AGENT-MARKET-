@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
     '@aws-sdk/s3-request-presigner',
     'viem',
     'siwe',
+    'prisma',
+    '@prisma/client',
   ],
   turbopack: {},
 };
