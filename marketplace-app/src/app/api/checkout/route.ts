@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const rl = rateLimit('checkout', session.user.id, { limit: 20, windowMs: 60 * 60 * 1000 });
+    const rl = await rateLimit('checkout', session.user.id, { limit: 20, windowMs: 60 * 60 * 1000 });
     if (!rl.ok) {
       return NextResponse.json({ error: 'Too many requests. Please wait before trying again.' }, {
         status: 429,

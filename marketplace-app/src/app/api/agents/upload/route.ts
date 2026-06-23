@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const rl = rateLimit('upload', session.user.id, { limit: 10, windowMs: 60 * 60 * 1000 });
+    const rl = await rateLimit('upload', session.user.id, { limit: 10, windowMs: 60 * 60 * 1000 });
     if (!rl.ok) {
       return NextResponse.json({ error: 'Too many uploads. Please wait before trying again.' }, {
         status: 429,
