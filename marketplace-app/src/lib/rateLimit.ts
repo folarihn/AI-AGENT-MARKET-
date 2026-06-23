@@ -1,4 +1,5 @@
 import { Redis } from '@upstash/redis';
+import { prisma } from '@/lib/prisma';
 
 interface WindowEntry {
   timestamps: number[];
@@ -18,10 +19,12 @@ export interface RateLimitResult {
   retryAfterMs: number;
 }
 
-// ── Distributed backend (Upstash Redis / Vercel KV) ──────────────────────────
+// ── Backend selection ────────────────────────────────────────────────────────
 // On serverless, in-memory counters are per-instance and reset on cold start,
-// so they cannot reliably enforce limits. When Redis env vars are present we use
-// a shared sliding-window log; otherwise we fall back to the in-memory limiter.
+// so they cannot reliably enforce limits. We prefer a shared store:
+//   1. Upstash Redis / Vercel KV, if its env vars are present (fastest).
+//   2. Otherwise the app's own Postgres DB (always available via DATABASE_URL).
+//   3. In-memory only as a last resort if both are unavailable.
 let redis: Redis | null = null;
 let redisResolved = false;
 
@@ -36,6 +39,7 @@ function getRedis(): Redis | null {
   return redis;
 }
 
+// ── In-memory backend (last resort) ──────────────────────────────────────────
 function maybeCleanup(now: number) {
   const intervalMs = 5 * 60 * 1000;
   if (now - lastGlobalCleanupMs < intervalMs) return;
@@ -60,8 +64,6 @@ function rateLimitMemory(
   const windowStart = now - opts.windowMs;
 
   const entry = store.get(key) ?? { timestamps: [] };
-
-  // Evict timestamps outside the current window
   entry.timestamps = entry.timestamps.filter(t => t > windowStart);
 
   if (entry.timestamps.length >= opts.limit) {
@@ -74,13 +76,10 @@ function rateLimitMemory(
   entry.timestamps.push(now);
   store.set(key, entry);
 
-  return {
-    ok: true,
-    remaining: opts.limit - entry.timestamps.length,
-    retryAfterMs: 0,
-  };
+  return { ok: true, remaining: opts.limit - entry.timestamps.length, retryAfterMs: 0 };
 }
 
+// ── Redis backend ────────────────────────────────────────────────────────────
 async function rateLimitRedis(
   client: Redis,
   bucket: string,
@@ -92,7 +91,6 @@ async function rateLimitRedis(
   const windowStart = now - opts.windowMs;
   const member = `${now}-${Math.random().toString(36).slice(2)}`;
 
-  // Atomic sliding-window log: drop old entries, record this hit, count, expire.
   const pipe = client.pipeline();
   pipe.zremrangebyscore(key, 0, windowStart);
   pipe.zadd(key, { score: now, member });
@@ -102,10 +100,7 @@ async function rateLimitRedis(
   const count = Number(results[2] ?? 0);
 
   if (count > opts.limit) {
-    // This request is over the limit; remove the hit we just recorded so a
-    // rejected request doesn't keep extending the window.
     await client.zrem(key, member);
-
     let retryAfterMs = opts.windowMs;
     const oldest = (await client.zrange(key, 0, 0, { withScores: true })) as (string | number)[];
     if (oldest && oldest.length >= 2) {
@@ -117,21 +112,88 @@ async function rateLimitRedis(
   return { ok: true, remaining: Math.max(0, opts.limit - count), retryAfterMs: 0 };
 }
 
+// ── Postgres backend (default shared store) ──────────────────────────────────
+// Self-provisioning: the table is created on first use so no migration step is
+// required. If the DB user lacks DDL rights, ensurePgTable() returns false and
+// we degrade to the in-memory limiter.
+let pgReady: Promise<boolean> | null = null;
+
+function ensurePgTable(): Promise<boolean> {
+  if (!pgReady) {
+    pgReady = (async () => {
+      try {
+        await prisma.$executeRawUnsafe(
+          'CREATE TABLE IF NOT EXISTS "RateLimitHit" (bucket text NOT NULL, identifier text NOT NULL, ts bigint NOT NULL)'
+        );
+        await prisma.$executeRawUnsafe(
+          'CREATE INDEX IF NOT EXISTS "RateLimitHit_key_ts_idx" ON "RateLimitHit" (bucket, identifier, ts)'
+        );
+        return true;
+      } catch (err) {
+        console.error('rateLimit: could not provision Postgres backend:', err);
+        return false;
+      }
+    })();
+  }
+  return pgReady;
+}
+
+async function rateLimitPostgres(
+  bucket: string,
+  identifier: string,
+  opts: RateLimitOptions
+): Promise<RateLimitResult> {
+  const now = Date.now();
+  const windowStart = now - opts.windowMs;
+
+  // Drop this key's expired hits, record the current hit, then count.
+  await prisma.$executeRaw`DELETE FROM "RateLimitHit" WHERE bucket = ${bucket} AND identifier = ${identifier} AND ts < ${windowStart}`;
+  await prisma.$executeRaw`INSERT INTO "RateLimitHit" (bucket, identifier, ts) VALUES (${bucket}, ${identifier}, ${now})`;
+  const rows = await prisma.$queryRaw<{ count: number }[]>`
+    SELECT count(*)::int AS count FROM "RateLimitHit" WHERE bucket = ${bucket} AND identifier = ${identifier}
+  `;
+  const count = Number(rows[0]?.count ?? 0);
+
+  // Opportunistic global cleanup so abandoned keys don't accumulate forever.
+  if (Math.random() < 0.02) {
+    const cutoff = now - 24 * 60 * 60 * 1000;
+    await prisma.$executeRaw`DELETE FROM "RateLimitHit" WHERE ts < ${cutoff}`;
+  }
+
+  if (count > opts.limit) {
+    const oldestRows = await prisma.$queryRaw<{ min: bigint | number | null }[]>`
+      SELECT min(ts) AS min FROM "RateLimitHit" WHERE bucket = ${bucket} AND identifier = ${identifier}
+    `;
+    const oldestTs = Number(oldestRows[0]?.min ?? now);
+    return { ok: false, remaining: 0, retryAfterMs: Math.max(0, oldestTs + opts.windowMs - now) };
+  }
+
+  return { ok: true, remaining: Math.max(0, opts.limit - count), retryAfterMs: 0 };
+}
+
 export async function rateLimit(
   bucket: string,
   identifier: string,
   opts: RateLimitOptions
 ): Promise<RateLimitResult> {
   const client = getRedis();
-  if (!client) return rateLimitMemory(bucket, identifier, opts);
-  try {
-    return await rateLimitRedis(client, bucket, identifier, opts);
-  } catch (err) {
-    // If Redis is unavailable, degrade to the in-memory limiter rather than
-    // failing the request outright.
-    console.error('rateLimit: Redis backend failed, falling back to memory:', err);
-    return rateLimitMemory(bucket, identifier, opts);
+  if (client) {
+    try {
+      return await rateLimitRedis(client, bucket, identifier, opts);
+    } catch (err) {
+      console.error('rateLimit: Redis backend failed, trying Postgres:', err);
+    }
   }
+
+  if (await ensurePgTable()) {
+    try {
+      return await rateLimitPostgres(bucket, identifier, opts);
+    } catch (err) {
+      console.error('rateLimit: Postgres backend failed, falling back to memory:', err);
+    }
+  }
+
+  return rateLimitMemory(bucket, identifier, opts);
 }
 
 export function getIp(req: { headers: { get(name: string): string | null } }): string {
