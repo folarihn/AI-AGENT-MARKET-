@@ -15,11 +15,32 @@ const nextConfig: NextConfig = {
   turbopack: {},
   poweredByHeader: false,
   async headers() {
+    // Content-Security-Policy. Kept deliberately permissive for scripts/connections
+    // because the wallet stack (RainbowKit / WalletConnect / wagmi) and Next's
+    // inline hydration need it; the value here still blocks plugin content,
+    // tag-injection base hijacking, and framing. Tighten script-src with a nonce
+    // once the app has been verified in a browser.
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self' data:",
+      "connect-src 'self' https: wss:",
+      "frame-src 'self' https:",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+      'upgrade-insecure-requests',
+    ].join('; ');
+
     return [
       {
         // Apply baseline security headers to every response.
         source: '/:path*',
         headers: [
+          { key: 'Content-Security-Policy', value: csp },
           // Stop the site being framed (clickjacking).
           { key: 'X-Frame-Options', value: 'DENY' },
           // Don't let browsers MIME-sniff responses into a different type.
