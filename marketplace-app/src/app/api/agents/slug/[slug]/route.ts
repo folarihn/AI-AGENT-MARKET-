@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/auth';
 
 export async function GET(req: NextRequest, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
@@ -32,6 +33,16 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ slug: strin
 
   if (!agent) {
     return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+  }
+
+  // Unpublished agents are only visible to their creator or an admin.
+  if (agent.status !== 'PUBLISHED') {
+    const session = await auth();
+    const isOwner = session?.user?.id === agent.creatorId;
+    const isAdmin = session?.user?.role === 'ADMIN';
+    if (!isOwner && !isAdmin) {
+      return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+    }
   }
 
   const [count, avg] = await Promise.all([

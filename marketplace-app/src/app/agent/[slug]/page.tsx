@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/auth';
 import AgentDetailClient, { type AgentDetail } from './AgentDetailClient';
 
 export const dynamic = 'force-dynamic';
@@ -97,6 +98,15 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ sl
   const { slug } = await params;
   const agent = await getAgentBySlug(slug);
   if (!agent) notFound();
+
+  // Unpublished agents (pending/rejected) are only visible to their creator or
+  // an admin — not to anyone who guesses the slug.
+  if (agent.status !== 'PUBLISHED') {
+    const session = await auth();
+    const isOwner = session?.user?.id === agent.creatorId;
+    const isAdmin = session?.user?.role === 'ADMIN';
+    if (!isOwner && !isAdmin) notFound();
+  }
 
   const [count, avg, scan, creator] = await Promise.all([
     prisma.review.count({ where: { agentId: agent.id } }),
