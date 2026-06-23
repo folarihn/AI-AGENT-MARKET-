@@ -1,7 +1,12 @@
+import NextAuth from 'next-auth';
 import { NextResponse } from 'next/server';
 import type { Session } from 'next-auth';
 import type { NextRequest } from 'next/server';
-import { auth } from '@/auth';
+import { authConfig } from '@/auth.config';
+
+// Edge-safe auth instance: built from the lightweight config only, so Prisma,
+// bcryptjs and siwe are never bundled into the middleware edge function.
+const { auth } = NextAuth(authConfig);
 
 function isApiPath(pathname: string) {
   return pathname.startsWith('/api/');

@@ -6,18 +6,13 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 import bcrypt from 'bcryptjs';
 import { SiweMessage } from 'siwe';
 import { prisma } from '@/lib/prisma';
+import { authConfig } from '@/auth.config';
 
 type AppUserRole = 'BUYER' | 'CREATOR' | 'ADMIN';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+  ...authConfig,
   adapter: PrismaAdapter(prisma),
-  session: {
-    strategy: 'jwt',
-  },
-  pages: {
-    signIn: '/login',
-  },
   providers: [
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
       ? [
