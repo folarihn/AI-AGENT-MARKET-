@@ -16,9 +16,28 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid wallet address' }, { status: 400 });
   }
 
+  const normalized = walletAddress.toLowerCase();
+
+  // Prevent a wallet from being claimed by more than one account. On-chain NFT
+  // licenses are tied to a wallet, so without this a user could bind someone
+  // else's wallet and inherit their paid licenses.
+  // NOTE: ownership is still only proven via the SIWE login flow; binding here
+  // should ideally also require a signed message. A DB unique index on
+  // User.walletAddress is recommended as defense-in-depth against races.
+  const existing = await prisma.user.findFirst({
+    where: { walletAddress: normalized, NOT: { id: session.user.id } },
+    select: { id: true },
+  });
+  if (existing) {
+    return NextResponse.json(
+      { error: 'This wallet is already linked to another account' },
+      { status: 409 }
+    );
+  }
+
   const user = await prisma.user.update({
     where: { id: session.user.id },
-    data: { walletAddress: walletAddress.toLowerCase() },
+    data: { walletAddress: normalized },
   });
 
   return NextResponse.json({ walletAddress: user.walletAddress });

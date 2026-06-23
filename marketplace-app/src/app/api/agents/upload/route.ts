@@ -43,6 +43,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'File must be a .zip archive' }, { status: 400 });
     }
 
+    // Reject oversized uploads before reading the whole archive into memory.
+    const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50 MB
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return NextResponse.json(
+        { error: 'Package exceeds the 50 MB size limit' },
+        { status: 413 }
+      );
+    }
+
     const buffer = await file.arrayBuffer();
     const { assetType, manifest, errors } = await detectAssetTypeAndValidate(buffer);
 

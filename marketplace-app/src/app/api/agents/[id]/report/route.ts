@@ -93,10 +93,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     const html = `
       <div style="font-family: ui-sans-serif, system-ui; line-height: 1.4">
         <h2>Agent report received</h2>
-        <p><strong>Agent:</strong> ${agent.displayName} (${agentUrl})</p>
-        <p><strong>Creator:</strong> ${agent.creatorName}</p>
-        <p><strong>Reason:</strong> ${reason}</p>
-        <p><strong>Reporter:</strong> ${reporterName}</p>
+        <p><strong>Agent:</strong> ${escapeHtml(agent.displayName)} (${escapeHtml(agentUrl)})</p>
+        <p><strong>Creator:</strong> ${escapeHtml(agent.creatorName)}</p>
+        <p><strong>Reason:</strong> ${escapeHtml(reason)}</p>
+        <p><strong>Reporter:</strong> ${escapeHtml(reporterName)}</p>
         ${message ? `<p><strong>Message:</strong><br/>${escapeHtml(message).replace(/\n/g, '<br/>')}</p>` : ''}
         <p><strong>Alert ID:</strong> ${alert.id}</p>
       </div>

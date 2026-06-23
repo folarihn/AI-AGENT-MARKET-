@@ -163,7 +163,19 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ sl
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script
+        type="application/ld+json"
+        // Escape characters that could break out of the <script> context.
+        // JSON.stringify alone does NOT escape "</script>", < or >, so an
+        // attacker-controlled field (displayName/description) could otherwise
+        // inject markup. See https://redux.js.org/usage/server-rendering#security-considerations
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd)
+            .replace(/</g, '\\u003c')
+            .replace(/>/g, '\\u003e')
+            .replace(/&/g, '\\u0026'),
+        }}
+      />
       <AgentDetailClient
         agent={clientAgent}
         initialReviewSummary={{ averageRating: avg._avg.rating ?? 0, reviewCount: count }}

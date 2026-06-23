@@ -239,6 +239,20 @@ export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  // SECURITY: executeSkillInSandbox() runs untrusted, uploader-supplied code
+  // in-process via child_process with full access to process.env (which holds
+  // PLATFORM_PRIVATE_KEY, STRIPE_SECRET_KEY, DATABASE_URL, R2 credentials).
+  // That is arbitrary remote code execution and secret exfiltration — the
+  // regex-based upload scanner does not make it safe. This path stays disabled
+  // until execution runs in a real isolated sandbox (separate container/VM with
+  // no secrets, network egress controls, dropped privileges, e.g. E2B/Firecracker).
+  if (process.env.ENABLE_SKILL_EXECUTION !== 'true') {
+    return NextResponse.json(
+      { error: 'Skill execution is not available' },
+      { status: 503 }
+    );
+  }
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
