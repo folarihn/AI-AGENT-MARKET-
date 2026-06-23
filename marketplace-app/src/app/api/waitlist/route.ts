@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { rateLimit, getIp } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
+  const rl = await rateLimit('waitlist-join', getIp(req), { limit: 10, windowMs: 60 * 1000 });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(rl.retryAfterMs / 1000)) } }
+    );
+  }
+
   const body = await req.json();
   const { agentId, email, name } = body;
 
@@ -34,6 +43,15 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  // Rate limit to blunt bulk email enumeration via the `email` lookup below.
+  const rl = await rateLimit('waitlist-check', getIp(req), { limit: 30, windowMs: 60 * 1000 });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(rl.retryAfterMs / 1000)) } }
+    );
+  }
+
   const { searchParams } = new URL(req.url);
   const agentId = searchParams.get('agentId');
   const email = searchParams.get('email');

@@ -2,11 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { CustomRequestCategory } from '@prisma/client';
+import { rateLimit, getIp } from '@/lib/rateLimit';
 
 const VALID_CATEGORIES = Object.values(CustomRequestCategory);
 
 export async function POST(req: NextRequest) {
   try {
+    const rl = await rateLimit('custom-request', getIp(req), { limit: 5, windowMs: 60 * 60 * 1000 });
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil(rl.retryAfterMs / 1000)) } }
+      );
+    }
+
     const body = await req.json();
     const { name, email, title, description, category, budget } = body;
 
