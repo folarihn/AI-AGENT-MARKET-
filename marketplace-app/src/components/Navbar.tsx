@@ -92,6 +92,12 @@ export function Navbar() {
             {user?.role === 'ADMIN' && (
               <Link href="/dashboard/admin" style={navLinkStyle}>Admin Dashboard</Link>
             )}
+
+            {(user?.role === 'CREATOR' || user?.role === 'ADMIN') && (
+              <Link href="/dashboard/creator/submit" style={{ ...navLinkStyle, color: '#6a5acd', fontWeight: 700 }}>
+                + Submit
+              </Link>
+            )}
           </div>
 
           {/* Desktop Auth */}
@@ -189,6 +195,12 @@ export function Navbar() {
               {user?.role === 'ADMIN' && (
                 <Link href="/dashboard/admin" onClick={() => setIsMobileMenuOpen(false)} style={mobileLinkStyle}>
                   Admin Dashboard
+                </Link>
+              )}
+
+              {(user?.role === 'CREATOR' || user?.role === 'ADMIN') && (
+                <Link href="/dashboard/creator/submit" onClick={() => setIsMobileMenuOpen(false)} style={{ ...mobileLinkStyle, color: '#6a5acd', fontWeight: 700 }}>
+                  + Submit Agent / Skill
                 </Link>
               )}
             </div>
