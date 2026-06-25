@@ -1,12 +1,42 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import JSZip from 'jszip';
 import {
   Upload, FileArchive, Check, ArrowRight, ArrowLeft,
   X, Zap, Database, MessageSquare, BarChart2, Code2,
   FlaskConical, MoreHorizontal, Globe, HardDrive, Terminal,
   DollarSign, Tag, Sparkles,
 } from 'lucide-react';
+
+type DetectedPerms = { network: boolean; filesystem: boolean; subprocess: boolean };
+
+// Read the declared permissions (and item type) straight from the uploaded
+// package's manifest, so the form reflects the package rather than asking the
+// uploader to re-declare them.
+async function readManifest(f: File): Promise<{ perms: DetectedPerms; itemType: ItemType } | null> {
+  try {
+    const zip = await JSZip.loadAsync(await f.arrayBuffer());
+    const names = Object.keys(zip.files);
+    const skillName = names.find((n) => /(^|\/)skill\.json$/i.test(n));
+    const agentName = names.find((n) => /(^|\/)agent\.json$/i.test(n));
+    const manifestName = skillName || agentName;
+    if (!manifestName) return null;
+    const manifest = JSON.parse(await zip.files[manifestName].async('string'));
+    const set = new Set<string>();
+    const raw = manifest.permissions;
+    if (Array.isArray(raw)) raw.forEach((p: unknown) => set.add(String(p).toLowerCase()));
+    else if (raw && typeof raw === 'object') {
+      Object.entries(raw as Record<string, unknown>).forEach(([k, v]) => { if (v) set.add(k.toLowerCase()); });
+    }
+    return {
+      perms: { network: set.has('network'), filesystem: set.has('filesystem'), subprocess: set.has('subprocess') },
+      itemType: skillName ? 'SKILL' : 'AGENT',
+    };
+  } catch {
+    return null;
+  }
+}
 
 type ItemType = 'AGENT' | 'SKILL';
 type Category = 'AUTOMATION' | 'DATA' | 'COMMUNICATION' | 'PRODUCTIVITY' | 'DEVTOOLS' | 'RESEARCH' | 'OTHER';
@@ -54,9 +84,27 @@ export function SubmitAgentForm({ onSuccess }: { onSuccess?: () => void }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [detectedPerms, setDetectedPerms] = useState<DetectedPerms | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const update = (patch: Partial<FormData>) => setForm(prev => ({ ...prev, ...patch }));
+
+  // Set the file and auto-detect permissions + type from its manifest.
+  const selectFile = async (f: File) => {
+    setFile(f);
+    setDetectedPerms(null);
+    const parsed = await readManifest(f);
+    if (parsed) {
+      setDetectedPerms(parsed.perms);
+      setForm(prev => ({
+        ...prev,
+        itemType: parsed.itemType,
+        permNetwork: parsed.perms.network,
+        permFilesystem: parsed.perms.filesystem,
+        permSubprocess: parsed.perms.subprocess,
+      }));
+    }
+  };
 
   /* ── Tag management ── */
   const addTag = () => {
@@ -84,12 +132,12 @@ export function SubmitAgentForm({ onSuccess }: { onSuccess?: () => void }) {
     e.stopPropagation();
     setDragActive(false);
     const f = e.dataTransfer.files[0];
-    if (f && f.name.endsWith('.zip')) setFile(f);
+    if (f && f.name.endsWith('.zip')) selectFile(f);
   }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (f) setFile(f);
+    if (f) selectFile(f);
   };
 
   /* ── Validation ── */
@@ -357,35 +405,29 @@ export function SubmitAgentForm({ onSuccess }: { onSuccess?: () => void }) {
 
           {/* Permissions */}
           <div>
-            <label style={{ ...labelStyle, marginBottom: '12px' }}>Permissions Required</label>
-            <p style={{ ...subLabel, marginBottom: '8px', marginTop: 0 }}>
-              Declare what your agent needs access to. Buyers see this before purchasing.
-            </p>
+            <label style={{ ...labelStyle, marginBottom: '12px' }}>Permissions</label>
             <p style={{
-              fontSize: '0.75rem', color: '#6a5acd', background: 'rgba(106,90,205,0.08)',
+              fontSize: '0.8125rem', color: '#6a5acd', background: 'rgba(106,90,205,0.08)',
               border: '1px solid rgba(106,90,205,0.18)', borderRadius: '10px',
-              padding: '10px 12px', marginTop: 0, marginBottom: '16px', lineHeight: 1.5,
+              padding: '12px 14px', marginTop: 0, marginBottom: '16px', lineHeight: 1.5,
             }}>
-              The final permissions shown to buyers are read from your package&apos;s{' '}
-              <code>agent.json</code> / <code>skill.json</code>. If your tool runs fully
-              offline (like the starter samples), leave all three unchecked.
+              Permissions are declared in your package&apos;s <code>agent.json</code> /{' '}
+              <code>skill.json</code>. They&apos;re read automatically from the file you upload in
+              the next step and shown to buyers — nothing to set here. Offline tools (like the
+              starter samples) declare none.
             </p>
 
             {([
-              { key: 'permNetwork' as const, label: 'Network Access', desc: 'Make HTTP requests, connect to APIs', Icon: Globe, color: '#3b82f6' },
-              { key: 'permFilesystem' as const, label: 'Filesystem Access', desc: 'Read/write local files', Icon: HardDrive, color: '#f59e0b' },
-              { key: 'permSubprocess' as const, label: 'Subprocess Execution', desc: 'Run shell commands or child processes', Icon: Terminal, color: '#ef4444' },
-            ]).map(({ key, label, desc, Icon, color }) => (
-              <button
-                key={key} type="button"
-                onClick={() => update({ [key]: !form[key] })}
+              { label: 'Network Access', desc: 'Make HTTP requests, connect to APIs', Icon: Globe, color: '#3b82f6' },
+              { label: 'Filesystem Access', desc: 'Read/write local files', Icon: HardDrive, color: '#f59e0b' },
+              { label: 'Subprocess Execution', desc: 'Run shell commands or child processes', Icon: Terminal, color: '#ef4444' },
+            ]).map(({ label, desc, Icon, color }) => (
+              <div
+                key={label}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '14px',
                   width: '100%', padding: '14px 16px', borderRadius: '14px',
-                  marginBottom: '10px', cursor: 'pointer', textAlign: 'left',
-                  border: form[key] ? `2px solid ${color}` : '1px solid rgba(0,0,0,0.06)',
-                  background: form[key] ? `${color}08` : 'transparent',
-                  transition: 'all 0.2s',
+                  marginBottom: '10px', border: '1px solid rgba(0,0,0,0.06)', opacity: 0.85,
                 }}
               >
                 <div style={{
@@ -399,16 +441,7 @@ export function SubmitAgentForm({ onSuccess }: { onSuccess?: () => void }) {
                   <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{label}</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{desc}</div>
                 </div>
-                <div style={{
-                  width: '22px', height: '22px', borderRadius: '6px',
-                  border: form[key] ? `2px solid ${color}` : '2px solid rgba(0,0,0,0.15)',
-                  background: form[key] ? color : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.2s', flexShrink: 0,
-                }}>
-                  {form[key] && <Check size={13} style={{ color: '#fff' }} />}
-                </div>
-              </button>
+              </div>
             ))}
           </div>
         </div>
@@ -443,7 +476,7 @@ export function SubmitAgentForm({ onSuccess }: { onSuccess?: () => void }) {
                 </div>
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                  onClick={(e) => { e.stopPropagation(); setFile(null); setDetectedPerms(null); }}
                   style={{
                     padding: '4px 12px', borderRadius: '8px', border: 'none',
                     background: 'rgba(239,68,68,0.1)', color: '#ef4444',
@@ -480,11 +513,13 @@ export function SubmitAgentForm({ onSuccess }: { onSuccess?: () => void }) {
                 ['Category', CATEGORIES.find(c => c.key === form.category)?.label || form.category],
                 ['Price', form.price === 0 ? 'Free' : `$${form.price}`],
                 ['Tags', form.tags.length > 0 ? form.tags.join(', ') : '—'],
-                ['Permissions', [
-                  form.permNetwork && 'Network',
-                  form.permFilesystem && 'Filesystem',
-                  form.permSubprocess && 'Subprocess',
-                ].filter(Boolean).join(', ') || 'None'],
+                ['Permissions', detectedPerms
+                  ? ([
+                      detectedPerms.network && 'Network',
+                      detectedPerms.filesystem && 'Filesystem',
+                      detectedPerms.subprocess && 'Subprocess',
+                    ].filter(Boolean).join(', ') || 'None (offline)')
+                  : (file ? 'Reading package…' : 'Upload a package to detect')],
               ] as [string, string][]).map(([k, v]) => (
                 <div key={k}>
                   <div style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k}</div>

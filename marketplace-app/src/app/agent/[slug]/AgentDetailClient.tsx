@@ -149,7 +149,7 @@ function WaitlistBox({ agentId }: { agentId: string }) {
 
 function CliSnippet({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false);
-  const cmd = `agenti install ${slug}`;
+  const cmd = `unzip ${slug}.zip && cd ${slug} && python3 main.py`;
 
   const copy = () => {
     navigator.clipboard.writeText(cmd).then(() => {
@@ -161,8 +161,12 @@ function CliSnippet({ slug }: { slug: string }) {
   return (
     <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
       <h2 className="text-sm font-bold text-gray-700 uppercase mb-2 flex items-center gap-2">
-        <Terminal size={14} /> Install
+        <Terminal size={14} /> How to run
       </h2>
+      <p className="text-xs text-gray-500 mb-2">
+        Download the package above, then unzip and run its entrypoint. Check the README below
+        for the exact inputs and outputs (some packages use <code>node main.js</code>).
+      </p>
       <div
         style={{
           display: 'flex',
