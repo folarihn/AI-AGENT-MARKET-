@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import JSZip from 'jszip';
 import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { storage } from '@/lib/storage';
 import { scanner } from '@/lib/scanner';
 import { detectAssetTypeAndValidate, type SkillManifest } from '@/lib/skills/validation';
@@ -196,11 +197,18 @@ export async function POST(req: NextRequest) {
       (typeof metadata.slug === 'string' && metadata.slug.trim()
         ? metadata.slug.trim()
         : displayName || name) || '';
-    const slugifiedName =
+    const baseSlug =
       rawSlugSource
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '') || (itemType.toLowerCase() + '-' + Date.now());
+
+    // Slugs are unique. If this one is taken (e.g. re-uploading the same name),
+    // append a short suffix instead of failing the whole upload with a 500.
+    let slugifiedName = baseSlug;
+    if (await prisma.agent.findUnique({ where: { slug: slugifiedName }, select: { id: true } })) {
+      slugifiedName = `${baseSlug}-${Date.now().toString(36)}`;
+    }
 
     const newAsset = await db.agents.create({
       slug: slugifiedName,
