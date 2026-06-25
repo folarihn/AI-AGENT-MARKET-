@@ -84,7 +84,7 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
     <div className="hero-gradient" style={{ display: 'flex', minHeight: '100vh', fontFamily: 'inherit' }}>
 
       {/* ══ SIDEBAR ══ */}
-      <aside style={{
+      <aside className="mp-sidebar" style={{
         ...glass,
         width: '220px', minWidth: '220px',
         borderRight: '1px solid var(--divider)',
@@ -340,11 +340,13 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
             </div>
           </div>
 
-          {/* Table */}
+          {/* Table (scrolls horizontally on narrow screens) */}
+          <div className="mp-table-scroll">
           <div style={{
             ...glass,
             borderRadius: '18px',
             overflow: 'hidden',
+            minWidth: '780px',
             boxShadow: '0 4px 24px rgba(106,90,205,0.08)',
             background: 'var(--card-bg)',
             border: '1px solid var(--card-border)',
@@ -443,6 +445,7 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
                 No agents found matching your criteria.
               </div>
             )}
+          </div>
           </div>
         </div>
       </div>

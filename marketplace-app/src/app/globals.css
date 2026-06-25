@@ -717,3 +717,14 @@ body {
 .flip-text.flip-in {
   animation: flipIn 0.35s cubic-bezier(0, 0.55, 0.45, 1) forwards;
 }
+
+/* ── Mobile responsiveness for the marketplace layout ── */
+@media (max-width: 820px) {
+  /* The fixed 220px sidebar can't fit next to content on phones — hide it so
+     the main content takes the full width instead of overflowing off-screen. */
+  .mp-sidebar { display: none !important; }
+}
+
+/* The agents table has 8 columns; below this width it scrolls horizontally
+   inside its card rather than squishing/overlapping the cells. */
+.mp-table-scroll { overflow-x: auto; }
