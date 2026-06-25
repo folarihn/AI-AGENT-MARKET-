@@ -10,6 +10,7 @@ import { AgentCategory } from '@prisma/client';
 import { searchAgents } from '@/lib/agentSearch';
 import { DashboardSearch } from '@/components/DashboardSearch';
 import { DashboardProfile } from '@/components/DashboardProfile';
+import { MobileNavDrawer } from '@/components/MobileNavDrawer';
 
 type AgentListItem = {
   id: string; slug: string; displayName: string; description: string;
@@ -167,16 +168,30 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
           gap: '16px',
           background: 'var(--topbar-bg)',
         }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '6px',
-            padding: '6px 14px', borderRadius: '10px',
-            background: 'rgba(106,90,205,0.08)',
-            border: '1px solid rgba(106,90,205,0.15)',
-            fontSize: '0.875rem', fontWeight: 600, color: '#6a5acd', cursor: 'default',
-          }}>
-            <Bot size={14} />
-            {rawType === 'AGENT' ? 'Agents' : rawType === 'SKILL' ? 'Skills' : rawCat ? rawCat.charAt(0) + rawCat.slice(1).toLowerCase() : 'All Items'}
-            <ChevronDown size={13} style={{ color: '#a78bfa' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <MobileNavDrawer
+              nav={[
+                { href: '/marketplace', label: 'Browse All', active: !rawCat && !rawType },
+                { href: url({ itemType: 'AGENT', category: null, sort: null }), label: 'Agents', active: rawType === 'AGENT' },
+                { href: url({ itemType: 'SKILL', category: null, sort: null }), label: 'Skills', active: rawType === 'SKILL' },
+              ]}
+              categories={CATEGORY_NAV.map(({ key, label }) => ({
+                href: url({ category: key, itemType: null, sort: null }),
+                label,
+                active: rawCat === key,
+              }))}
+            />
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              padding: '6px 14px', borderRadius: '10px',
+              background: 'rgba(106,90,205,0.08)',
+              border: '1px solid rgba(106,90,205,0.15)',
+              fontSize: '0.875rem', fontWeight: 600, color: '#6a5acd', cursor: 'default',
+            }}>
+              <Bot size={14} />
+              {rawType === 'AGENT' ? 'Agents' : rawType === 'SKILL' ? 'Skills' : rawCat ? rawCat.charAt(0) + rawCat.slice(1).toLowerCase() : 'All Items'}
+              <ChevronDown size={13} style={{ color: '#a78bfa' }} />
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
