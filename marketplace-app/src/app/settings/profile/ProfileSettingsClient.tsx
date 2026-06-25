@@ -1,7 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useAccount, useSwitchChain, useSignMessage } from 'wagmi';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { SiweMessage } from 'siwe';
 import { Button } from '@/components/ui/button';
+import { ARC_CHAIN_ID } from '@/lib/wagmi';
 
 type UserProfile = {
   id: string;
@@ -11,6 +15,7 @@ type UserProfile = {
   image: string | null;
   emailVerified: boolean;
   createdAt: string;
+  walletAddress: string | null;
 };
 
 export default function ProfileSettingsClient({ initialUser }: { initialUser: UserProfile }) {
@@ -18,6 +23,53 @@ export default function ProfileSettingsClient({ initialUser }: { initialUser: Us
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  const [wallet, setWallet] = useState(initialUser.walletAddress);
+  const [linking, setLinking] = useState(false);
+  const [walletError, setWalletError] = useState<string | null>(null);
+  const { address, isConnected, chainId } = useAccount();
+  const { openConnectModal } = useConnectModal();
+  const { switchChainAsync } = useSwitchChain();
+  const { signMessageAsync } = useSignMessage();
+
+  const linkWallet = async () => {
+    setWalletError(null);
+    if (!isConnected || !address) { openConnectModal?.(); return; }
+    setLinking(true);
+    try {
+      if (chainId !== ARC_CHAIN_ID) {
+        await switchChainAsync({ chainId: ARC_CHAIN_ID });
+      }
+      const { nonce } = await fetch('/api/auth/nonce').then((r) => r.json());
+      const message = new SiweMessage({
+        domain: window.location.host,
+        address,
+        statement: 'Link this wallet to your AgentMarket account to receive payments',
+        uri: window.location.origin,
+        version: '1',
+        chainId: ARC_CHAIN_ID,
+        nonce,
+        expirationTime: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      }).prepareMessage();
+      const signature = await signMessageAsync({ message });
+      const res = await fetch('/api/user/wallet', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, signature }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setWalletError(data?.error || 'Could not link wallet');
+        return;
+      }
+      setWallet(data.walletAddress);
+    } catch (e) {
+      const cancelled = e instanceof Error && /reject|denied|cancell/i.test(e.message);
+      setWalletError(cancelled ? 'Signature cancelled' : 'Could not link wallet');
+    } finally {
+      setLinking(false);
+    }
+  };
 
   const onSave = async () => {
     setError(null);
@@ -78,6 +130,28 @@ export default function ProfileSettingsClient({ initialUser }: { initialUser: Us
           <Button onClick={onSave} disabled={saving}>
             {saving ? 'Saving...' : 'Save changes'}
           </Button>
+        </div>
+
+        <div className="border-t border-gray-200 pt-6">
+          <div className="text-sm font-medium text-gray-700">Payout wallet</div>
+          <p className="mt-1 text-xs text-gray-500">
+            Buyers pay you directly in USDC on Arc Testnet. Link a wallet here to receive payments
+            and to verify ownership for purchases.
+          </p>
+
+          {wallet ? (
+            <div className="mt-3 flex items-center justify-between gap-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+              <span className="font-mono text-sm text-gray-900 truncate">{wallet}</span>
+              <span className="shrink-0 text-xs font-medium text-green-600">Linked ✓</span>
+            </div>
+          ) : (
+            <div className="mt-3">
+              <Button onClick={linkWallet} disabled={linking}>
+                {linking ? 'Linking…' : isConnected ? 'Sign to link wallet' : 'Connect wallet'}
+              </Button>
+            </div>
+          )}
+          {walletError ? <div className="mt-2 text-sm text-red-600">{walletError}</div> : null}
         </div>
       </div>
     </div>

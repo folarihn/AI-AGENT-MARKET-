@@ -28,6 +28,7 @@ export default async function ProfileSettingsPage() {
       image: true,
       emailVerified: true,
       createdAt: true,
+      walletAddress: true,
     },
   });
 
@@ -45,6 +46,7 @@ export default async function ProfileSettingsPage() {
         image: user.image,
         emailVerified: Boolean(user.emailVerified),
         createdAt: user.createdAt.toISOString(),
+        walletAddress: user.walletAddress,
       }}
     />
   );
