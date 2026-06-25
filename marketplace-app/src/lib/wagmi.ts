@@ -12,7 +12,9 @@ export const USDC_ADDRESS     = '0x3600000000000000000000000000000000000000';
 export const arcTestnet = {
   id: ARC_CHAIN_ID,
   name: 'Arc Testnet',
-  nativeCurrency: { decimals: 6, name: 'USDC', symbol: 'USDC' },
+  // Arc's NATIVE gas token (USDC) uses 18 decimals. The USDC ERC-20 interface
+  // at USDC_ADDRESS uses 6 decimals — payments use that interface separately.
+  nativeCurrency: { decimals: 18, name: 'USDC', symbol: 'USDC' },
   rpcUrls: {
     default: { http: [ARC_RPC_URL] },
     public:  { http: [ARC_RPC_URL] },

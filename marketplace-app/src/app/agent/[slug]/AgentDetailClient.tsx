@@ -16,6 +16,9 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import { useAccount, useSwitchChain, useWriteContract, usePublicClient } from 'wagmi';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { ARC_CHAIN_ID } from '@/lib/wagmi';
 import ReviewForm from '@/components/ReviewForm';
 import ReviewList from '@/components/ReviewList';
 import SecurityPermissions, { type ScanSummary } from '@/components/SecurityPermissions';
@@ -290,6 +293,19 @@ function ChangelogSection({ agentId }: { agentId: string }) {
   );
 }
 
+const ERC20_TRANSFER_ABI = [
+  {
+    type: 'function',
+    name: 'transfer',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+] as const;
+
 export default function AgentDetailClient({
   agent,
   initialReviewSummary,
@@ -309,6 +325,13 @@ export default function AgentDetailClient({
   const [isLoading, setIsLoading] = useState(false);
   const [checkingLicense, setCheckingLicense] = useState(true);
   const [reviewSummary, setReviewSummary] = useState(initialReviewSummary);
+  const [payStatus, setPayStatus] = useState<string | null>(null);
+
+  const { address, isConnected, chainId } = useAccount();
+  const { openConnectModal } = useConnectModal();
+  const { switchChainAsync } = useSwitchChain();
+  const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient();
 
   const isComingSoon = agent.status === 'COMING_SOON';
 
@@ -333,21 +356,54 @@ export default function AgentDetailClient({
     }
   }, [user, agent.id]);
 
-  const handleBuy = async () => {
+  const handleBuyArc = async () => {
     if (!user) { router.push('/login'); return; }
+    if (!isConnected || !address) { openConnectModal?.(); return; }
     setIsLoading(true);
+    setPayStatus('Preparing…');
     try {
-      const res = await fetch('/api/checkout', {
+      if (chainId !== ARC_CHAIN_ID) {
+        setPayStatus('Switch to Arc Testnet in your wallet…');
+        await switchChainAsync({ chainId: ARC_CHAIN_ID });
+      }
+
+      const info = await fetch(`/api/agents/${agent.id}/purchase-arc`).then((r) => r.json());
+      if (!info?.creatorWallet) {
+        alert(info?.error || 'Payment is unavailable for this agent.');
+        return;
+      }
+
+      setPayStatus('Confirm the USDC payment in your wallet…');
+      const hash = await writeContractAsync({
+        address: info.usdcAddress as `0x${string}`,
+        abi: ERC20_TRANSFER_ABI,
+        functionName: 'transfer',
+        args: [info.creatorWallet as `0x${string}`, BigInt(info.priceUnits)],
+        chainId: ARC_CHAIN_ID,
+      });
+
+      setPayStatus('Waiting for confirmation…');
+      if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
+
+      setPayStatus('Verifying payment…');
+      const res = await fetch(`/api/agents/${agent.id}/purchase-arc`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId: agent.id }),
+        body: JSON.stringify({ txHash: hash }),
       });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
-      else alert('Checkout failed');
+      if (res.ok && data.success) {
+        setHasLicense(true);
+        setPayStatus(null);
+      } else {
+        alert(data?.error || 'Payment could not be verified.');
+        setPayStatus(null);
+      }
     } catch (e) {
       console.error(e);
-      alert('Error initiating checkout');
+      const cancelled = e instanceof Error && /reject|denied|cancell/i.test(e.message);
+      alert(cancelled ? 'Payment cancelled.' : 'Payment failed. Please try again.');
+      setPayStatus(null);
     } finally {
       setIsLoading(false);
     }
@@ -400,16 +456,20 @@ export default function AgentDetailClient({
                 <Download className="mr-2 h-4 w-4" /> Download
               </Button>
             ) : (
-              <Button className="mt-2" onClick={handleBuy} disabled={isLoading || !user}>
+              <Button className="mt-2" onClick={handleBuyArc} disabled={isLoading || !user}>
                 {isLoading ? (
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
                 ) : (
-                  <><ShoppingCart className="mr-2 h-4 w-4" /> Buy Now</>
+                  <><ShoppingCart className="mr-2 h-4 w-4" /> Pay {agent.price} USDC</>
                 )}
               </Button>
             )}
 
+            {payStatus && <p className="text-xs text-indigo-600 mt-1">{payStatus}</p>}
             {!user && !isComingSoon && <p className="text-xs text-gray-500 mt-1">Login required</p>}
+            {user && !isComingSoon && agent.price > 0 && !hasLicense && (
+              <p className="text-[11px] text-gray-400 mt-1">Pay with USDC on Arc Testnet</p>
+            )}
           </div>
         </div>
 
