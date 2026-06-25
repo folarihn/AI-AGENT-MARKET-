@@ -31,12 +31,10 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* The UI is designed for a light theme (components hardcode gray-900 text on
+   white / gray-50 surfaces). Do NOT follow the OS dark-mode preference here, or
+   the background turns black while text stays dark, making it unreadable.
+   Re-introduce a dark palette only once components are dark-mode aware. */
 
 /* ── Reset ── */
 html {
