@@ -113,28 +113,33 @@ export function Navbar() {
                 </button>
               </>
             ) : (
-              <button
-                type="button"
-                onClick={() => openConnectModal?.()}
-                style={{
-                  fontSize: '0.875rem',
-                  fontWeight: 600,
-                  color: '#fff',
-                  padding: '8px 20px',
-                  borderRadius: '999px',
-                  background: 'var(--accent)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  whiteSpace: 'nowrap',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <Wallet size={14} />
-                Connect Wallet
-              </button>
+              <>
+                <Link href="/login" style={{ ...navLinkStyle, fontWeight: 600 }}>
+                  Sign in
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => openConnectModal?.()}
+                  style={{
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    color: '#fff',
+                    padding: '8px 20px',
+                    borderRadius: '999px',
+                    background: 'var(--accent)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    whiteSpace: 'nowrap',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <Wallet size={14} />
+                  Connect Wallet
+                </button>
+              </>
             )}
           </div>
 
@@ -207,7 +212,25 @@ export function Navbar() {
                   </button>
                 </div>
               ) : (
-                <div style={{ display: 'flex', gap: '8px', padding: '4px 14px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px 14px' }}>
+                  <Link
+                    href="/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    style={{
+                      padding: '10px',
+                      borderRadius: '10px',
+                      fontSize: '0.875rem',
+                      fontWeight: 600,
+                      color: 'var(--accent)',
+                      background: 'rgba(106, 90, 205, 0.1)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textDecoration: 'none',
+                      textAlign: 'center',
+                    }}
+                  >
+                    Sign in with email
+                  </Link>
                   <button
                     type="button"
                     onClick={() => { openConnectModal?.(); setIsMobileMenuOpen(false); }}
