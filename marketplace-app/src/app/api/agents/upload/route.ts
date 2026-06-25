@@ -264,6 +264,15 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('Upload error:', error);
+    const message = error instanceof Error ? error.message : '';
+    // Surface a clear, actionable error when object storage isn't configured,
+    // instead of a generic 500 — uploads write the package to R2.
+    if (message.startsWith('Missing env var: R2')) {
+      return NextResponse.json(
+        { error: 'File storage is not configured on the server. Set the R2_* environment variables (R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, R2_PUBLIC_URL) in Vercel.' },
+        { status: 503 }
+      );
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
