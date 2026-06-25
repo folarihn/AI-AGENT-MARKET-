@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import JSZip from 'jszip';
 import {
   Upload, FileArchive, Check, ArrowRight, ArrowLeft,
@@ -66,6 +67,8 @@ const CATEGORIES: { key: Category; label: string; Icon: typeof Zap }[] = [
 const STEPS = ['Basic Info', 'Pricing & Permissions', 'Upload & Review'];
 
 export function SubmitAgentForm({ onSuccess }: { onSuccess?: () => void }) {
+  const { data: session } = useSession();
+  const hasWallet = Boolean((session?.user as { walletAddress?: string } | undefined)?.walletAddress);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormData>({
     itemType: 'AGENT',
@@ -385,9 +388,9 @@ export function SubmitAgentForm({ onSuccess }: { onSuccess?: () => void }) {
           <div style={{ marginBottom: '28px' }}>
             <label style={labelStyle}>
               <DollarSign size={13} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
-              Price (USD)
+              Price (USDC)
             </label>
-            <p style={subLabel}>Set to 0 for free. Buyers pay with USDC on Arc Testnet.</p>
+            <p style={subLabel}>Set to 0 for free. Buyers pay this amount in USDC on Arc Testnet, sent directly to your wallet.</p>
             <div style={{ position: 'relative', maxWidth: '200px', marginTop: '8px' }}>
               <span style={{
                 position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)',
@@ -401,6 +404,17 @@ export function SubmitAgentForm({ onSuccess }: { onSuccess?: () => void }) {
                 onChange={e => update({ price: parseFloat(e.target.value) || 0 })}
               />
             </div>
+            {form.price > 0 && !hasWallet && (
+              <p style={{
+                fontSize: '0.75rem', color: '#b45309', background: 'rgba(245,158,11,0.1)',
+                border: '1px solid rgba(245,158,11,0.25)', borderRadius: '10px',
+                padding: '10px 12px', marginTop: '10px', lineHeight: 1.5,
+              }}>
+                You haven&apos;t linked a wallet. Buyers pay creators directly in USDC, so you must
+                connect a wallet (Sign in with wallet, or link it in settings) to receive payment —
+                otherwise checkout will be blocked for buyers.
+              </p>
+            )}
           </div>
 
           {/* Permissions */}

@@ -69,10 +69,16 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const buyerWallet = (session.user as { walletAddress?: string }).walletAddress;
+  // Read the buyer's bound wallet from the DB (not the session token, which may
+  // be stale right after the wallet was linked during this same purchase).
+  const buyerRow = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { walletAddress: true },
+  });
+  const buyerWallet = buyerRow?.walletAddress;
   if (!buyerWallet) {
     return NextResponse.json(
-      { error: 'Connect and verify a wallet (Sign in with wallet) before paying, so the payment can be tied to your account.' },
+      { error: 'Link a wallet before paying, so the payment can be tied to your account.' },
       { status: 409 }
     );
   }

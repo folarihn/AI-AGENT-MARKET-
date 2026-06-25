@@ -16,9 +16,10 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
-import { useAccount, useSwitchChain, useWriteContract, usePublicClient } from 'wagmi';
+import { useAccount, useSwitchChain, useWriteContract, usePublicClient, useSignMessage } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { ARC_CHAIN_ID } from '@/lib/wagmi';
+import { SiweMessage } from 'siwe';
+import { ARC_CHAIN_ID, ARC_EXPLORER_URL } from '@/lib/wagmi';
 import ReviewForm from '@/components/ReviewForm';
 import ReviewList from '@/components/ReviewList';
 import SecurityPermissions, { type ScanSummary } from '@/components/SecurityPermissions';
@@ -293,7 +294,7 @@ function ChangelogSection({ agentId }: { agentId: string }) {
   );
 }
 
-const ERC20_TRANSFER_ABI = [
+const ERC20_ABI = [
   {
     type: 'function',
     name: 'transfer',
@@ -303,6 +304,13 @@ const ERC20_TRANSFER_ABI = [
       { name: 'amount', type: 'uint256' },
     ],
     outputs: [{ name: '', type: 'bool' }],
+  },
+  {
+    type: 'function',
+    name: 'balanceOf',
+    stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
   },
 ] as const;
 
@@ -326,12 +334,49 @@ export default function AgentDetailClient({
   const [checkingLicense, setCheckingLicense] = useState(true);
   const [reviewSummary, setReviewSummary] = useState(initialReviewSummary);
   const [payStatus, setPayStatus] = useState<string | null>(null);
+  const [lastTx, setLastTx] = useState<string | null>(null);
 
   const { address, isConnected, chainId } = useAccount();
   const { openConnectModal } = useConnectModal();
   const { switchChainAsync } = useSwitchChain();
   const { writeContractAsync } = useWriteContract();
+  const { signMessageAsync } = useSignMessage();
   const publicClient = usePublicClient();
+
+  // Link the connected wallet to the account so the payment can be tied to the
+  // buyer's identity (server checks the USDC transfer came from this wallet).
+  const ensureWalletLinked = async (): Promise<boolean> => {
+    const bound = (user as { walletAddress?: string } | undefined)?.walletAddress;
+    if (bound && address && bound.toLowerCase() === address.toLowerCase()) return true;
+    if (!address) return false;
+    try {
+      const { nonce } = await fetch('/api/auth/nonce').then((r) => r.json());
+      const message = new SiweMessage({
+        domain: window.location.host,
+        address,
+        statement: 'Link this wallet to your AgentMarket account',
+        uri: window.location.origin,
+        version: '1',
+        chainId: ARC_CHAIN_ID,
+        nonce,
+        expirationTime: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      }).prepareMessage();
+      const signature = await signMessageAsync({ message });
+      const res = await fetch('/api/user/wallet', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, signature }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        alert(d.error || 'Could not link your wallet.');
+        return false;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  };
 
   const isComingSoon = agent.status === 'COMING_SOON';
 
@@ -360,6 +405,7 @@ export default function AgentDetailClient({
     if (!user) { router.push('/login'); return; }
     if (!isConnected || !address) { openConnectModal?.(); return; }
     setIsLoading(true);
+    setLastTx(null);
     setPayStatus('Preparing…');
     try {
       if (chainId !== ARC_CHAIN_ID) {
@@ -367,20 +413,40 @@ export default function AgentDetailClient({
         await switchChainAsync({ chainId: ARC_CHAIN_ID });
       }
 
+      setPayStatus('Linking your wallet…');
+      if (!(await ensureWalletLinked())) { setPayStatus(null); return; }
+
       const info = await fetch(`/api/agents/${agent.id}/purchase-arc`).then((r) => r.json());
       if (!info?.creatorWallet) {
         alert(info?.error || 'Payment is unavailable for this agent.');
         return;
       }
 
+      // Pre-flight USDC balance check.
+      if (publicClient) {
+        setPayStatus('Checking USDC balance…');
+        const balance = (await publicClient.readContract({
+          address: info.usdcAddress as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: 'balanceOf',
+          args: [address],
+        })) as bigint;
+        if (balance < BigInt(info.priceUnits)) {
+          alert('Not enough USDC on Arc Testnet. Get test USDC from faucet.circle.com and try again.');
+          setPayStatus(null);
+          return;
+        }
+      }
+
       setPayStatus('Confirm the USDC payment in your wallet…');
       const hash = await writeContractAsync({
         address: info.usdcAddress as `0x${string}`,
-        abi: ERC20_TRANSFER_ABI,
+        abi: ERC20_ABI,
         functionName: 'transfer',
         args: [info.creatorWallet as `0x${string}`, BigInt(info.priceUnits)],
         chainId: ARC_CHAIN_ID,
       });
+      setLastTx(hash);
 
       setPayStatus('Waiting for confirmation…');
       if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
@@ -445,7 +511,7 @@ export default function AgentDetailClient({
             </p>
           </div>
           <div className="flex flex-col items-end">
-            <span className="text-2xl font-bold text-gray-900">{agent.price === 0 ? 'Free' : `$${agent.price}`}</span>
+            <span className="text-2xl font-bold text-gray-900">{agent.price === 0 ? 'Free' : `${agent.price} USDC`}</span>
 
             {isComingSoon ? null : checkingLicense ? (
               <Button className="mt-2" disabled>
@@ -466,6 +532,16 @@ export default function AgentDetailClient({
             )}
 
             {payStatus && <p className="text-xs text-indigo-600 mt-1">{payStatus}</p>}
+            {lastTx && (
+              <a
+                href={`${ARC_EXPLORER_URL}/tx/${lastTx}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-indigo-600 hover:underline mt-1"
+              >
+                View transaction ↗
+              </a>
+            )}
             {!user && !isComingSoon && <p className="text-xs text-gray-500 mt-1">Login required</p>}
             {user && !isComingSoon && agent.price > 0 && !hasLicense && (
               <p className="text-[11px] text-gray-400 mt-1">Pay with USDC on Arc Testnet</p>
