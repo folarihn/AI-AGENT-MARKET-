@@ -358,8 +358,17 @@ export function SubmitAgentForm({ onSuccess }: { onSuccess?: () => void }) {
           {/* Permissions */}
           <div>
             <label style={{ ...labelStyle, marginBottom: '12px' }}>Permissions Required</label>
-            <p style={{ ...subLabel, marginBottom: '16px', marginTop: 0 }}>
+            <p style={{ ...subLabel, marginBottom: '8px', marginTop: 0 }}>
               Declare what your agent needs access to. Buyers see this before purchasing.
+            </p>
+            <p style={{
+              fontSize: '0.75rem', color: '#6a5acd', background: 'rgba(106,90,205,0.08)',
+              border: '1px solid rgba(106,90,205,0.18)', borderRadius: '10px',
+              padding: '10px 12px', marginTop: 0, marginBottom: '16px', lineHeight: 1.5,
+            }}>
+              The final permissions shown to buyers are read from your package&apos;s{' '}
+              <code>agent.json</code> / <code>skill.json</code>. If your tool runs fully
+              offline (like the starter samples), leave all three unchecked.
             </p>
 
             {([
