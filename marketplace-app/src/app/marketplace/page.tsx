@@ -391,11 +391,11 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
                     <div style={{ minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{a.displayName}</span>
-                        <span style={{ fontSize: '0.625rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        <span style={{ fontSize: '0.625rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                           {a.itemType === 'SKILL' ? 'Skill' : 'Agent'}
                         </span>
                       </div>
-                      <div style={{ fontSize: '0.6875rem', color: '#9ca3af', fontFamily: 'monospace', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: '0.6875rem', color: '#6b7280', fontFamily: 'monospace', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {a.slug.length > 20 ? a.slug.slice(0, 20) + '…' : a.slug}
                       </div>
                     </div>
@@ -415,7 +415,7 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <Star size={11} fill="#f59e0b" color="#f59e0b" />
                     <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)' }}>{a.rating.toFixed(1)}</span>
-                    <span style={{ fontSize: '0.6875rem', color: '#9ca3af' }}>({a.reviewsCount})</span>
+                    <span style={{ fontSize: '0.6875rem', color: '#6b7280' }}>({a.reviewsCount})</span>
                   </div>
 
                   {/* Downloads */}
@@ -439,7 +439,7 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
             ))}
 
             {agents.length === 0 && (
-              <div style={{ padding: '64px 24px', textAlign: 'center', color: '#9ca3af', fontSize: '0.9375rem' }}>
+              <div style={{ padding: '64px 24px', textAlign: 'center', color: '#6b7280', fontSize: '0.9375rem' }}>
                 No agents found matching your criteria.
               </div>
             )}

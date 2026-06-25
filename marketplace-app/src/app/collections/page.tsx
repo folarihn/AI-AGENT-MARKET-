@@ -168,7 +168,7 @@ export default async function CollectionsPage() {
                       justifyContent: 'space-between',
                     }}
                   >
-                    <span style={{ fontSize: '0.8125rem', color: '#9ca3af' }}>
+                    <span style={{ fontSize: '0.8125rem', color: '#6b7280' }}>
                       by {col.creator.name || 'Creator'}
                     </span>
                     <span

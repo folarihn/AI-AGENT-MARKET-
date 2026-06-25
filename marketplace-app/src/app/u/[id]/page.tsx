@@ -203,10 +203,10 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
                           <Package size={18} style={{ color: '#6a5acd', flexShrink: 0 }} />
                           <div style={{ minWidth: 0 }}>
                             <p style={{ fontWeight: 700, color: '#111827', fontSize: '0.9375rem' }} className="truncate">{col.name}</p>
-                            <p style={{ fontSize: '0.8125rem', color: '#9ca3af' }}>{col._count.items} items</p>
+                            <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>{col._count.items} items</p>
                           </div>
                         </div>
-                        <ArrowRight size={16} style={{ color: '#9ca3af', flexShrink: 0 }} className="group-hover:text-indigo-500 transition-colors" />
+                        <ArrowRight size={16} style={{ color: '#6b7280', flexShrink: 0 }} className="group-hover:text-indigo-500 transition-colors" />
                       </div>
                     </Link>
                   ))}
@@ -329,7 +329,7 @@ function ItemCard({
               <Star size={12} fill="#f59e0b" color="#f59e0b" />
               <span style={{ fontWeight: 700, color: '#111827' }}>{rating.toFixed(1)}</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '0.75rem', color: '#9ca3af' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '0.75rem', color: '#6b7280' }}>
               <Download size={11} />
               <span>{item.downloads}</span>
             </div>

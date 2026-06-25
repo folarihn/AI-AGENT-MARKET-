@@ -214,7 +214,7 @@ export default function MarketplaceFilters({
           {/* Search Input */}
           <div className="relative flex-grow md:max-w-xs w-full">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={16} style={{ color: '#9ca3af' }} />
+              <Search size={16} style={{ color: '#6b7280' }} />
             </div>
             <input
               type="text"

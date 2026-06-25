@@ -77,7 +77,7 @@ function StatCard({
       <div style={{ fontSize: '1.875rem', fontWeight: 800, color: '#111827', letterSpacing: '-0.025em' }}>
         {value}
       </div>
-      {sub && <div style={{ fontSize: '0.8125rem', color: '#9ca3af' }}>{sub}</div>}
+      {sub && <div style={{ fontSize: '0.8125rem', color: '#6b7280' }}>{sub}</div>}
     </div>
   );
 }
@@ -246,13 +246,13 @@ export default function PayoutsDashboard() {
                       </td>
                       <td style={{ padding: '14px 16px', color: '#6b7280', fontSize: '0.875rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Eye size={13} style={{ color: '#9ca3af' }} />
+                          <Eye size={13} style={{ color: '#6b7280' }} />
                           {ag.views.toLocaleString()}
                         </div>
                       </td>
                       <td style={{ padding: '14px 16px', color: '#6b7280', fontSize: '0.875rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Download size={13} style={{ color: '#9ca3af' }} />
+                          <Download size={13} style={{ color: '#6b7280' }} />
                           {ag.downloads.toLocaleString()}
                         </div>
                       </td>
@@ -277,7 +277,7 @@ export default function PayoutsDashboard() {
               </tbody>
             </table>
           </div>
-          <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '8px', paddingLeft: '4px' }}>
+          <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '8px', paddingLeft: '4px' }}>
             Platform fee: 20% of gross revenue. Payouts are processed monthly.
           </p>
         </div>
@@ -310,13 +310,13 @@ export default function PayoutsDashboard() {
               >
                 <div>
                   <p style={{ fontWeight: 600, color: '#111827', fontSize: '0.9rem' }}>{p.agentName}</p>
-                  <p style={{ fontSize: '0.8125rem', color: '#9ca3af', marginTop: '2px' }}>
+                  <p style={{ fontSize: '0.8125rem', color: '#6b7280', marginTop: '2px' }}>
                     {new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ fontWeight: 700, color: '#111827', fontSize: '0.9rem' }}>${Number(p.amount).toFixed(2)}</p>
-                  <p style={{ fontSize: '0.75rem', color: '#9ca3af' }}>net ${(Number(p.amount) * 0.8).toFixed(2)}</p>
+                  <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>net ${(Number(p.amount) * 0.8).toFixed(2)}</p>
                 </div>
               </div>
             ))}
@@ -338,7 +338,7 @@ export default function PayoutsDashboard() {
           <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
             No earnings yet
           </h3>
-          <p style={{ color: '#9ca3af', marginBottom: '24px' }}>
+          <p style={{ color: '#6b7280', marginBottom: '24px' }}>
             Publish your first agent or skill to start earning.
           </p>
           <Link

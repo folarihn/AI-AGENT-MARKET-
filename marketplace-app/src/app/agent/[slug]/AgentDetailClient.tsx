@@ -259,13 +259,13 @@ function ChangelogSection({ agentId }: { agentId: string }) {
                 <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#111827' }}>{entry.title}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
                   {new Date(entry.createdAt).toLocaleDateString()}
                 </span>
                 <ChevronDown
                   size={16}
                   style={{
-                    color: '#9ca3af',
+                    color: '#6b7280',
                     transform: expanded === entry.id ? 'rotate(180deg)' : 'none',
                     transition: 'transform 0.15s',
                   }}

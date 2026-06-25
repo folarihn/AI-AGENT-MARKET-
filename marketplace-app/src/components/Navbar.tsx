@@ -202,7 +202,7 @@ export function Navbar() {
                   />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>{user.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>{user.email}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{user.email}</div>
                   </div>
                   <button
                     onClick={() => signOut({ callbackUrl: '/marketplace' })}

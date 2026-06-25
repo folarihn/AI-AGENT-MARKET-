@@ -136,7 +136,7 @@ export default function CustomRequestModal({ open, onClose }: Props) {
               border: 'none',
               cursor: 'pointer',
               padding: '4px',
-              color: '#9ca3af',
+              color: '#6b7280',
               flexShrink: 0,
             }}
           >
@@ -222,7 +222,7 @@ export default function CustomRequestModal({ open, onClose }: Props) {
                   placeholder="e.g. Slack → Notion meeting summarizer"
                   style={inputStyle}
                 />
-                <span style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '4px', display: 'block' }}>
+                <span style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px', display: 'block' }}>
                   {form.title.length}/120
                 </span>
               </div>
@@ -251,7 +251,7 @@ export default function CustomRequestModal({ open, onClose }: Props) {
                   placeholder="Describe what the workflow should do, what tools/APIs it should connect to, what the inputs and outputs are, and any specific requirements..."
                   style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
                 />
-                <span style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '4px', display: 'block' }}>
+                <span style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px', display: 'block' }}>
                   {form.description.length}/2000
                 </span>
               </div>

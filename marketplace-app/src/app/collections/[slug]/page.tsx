@@ -164,13 +164,13 @@ export default async function CollectionDetailPage({ params }: { params: Promise
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8125rem' }}>
                     <Star size={13} fill="#f59e0b" color="#f59e0b" />
                     <span style={{ color: '#111827', fontWeight: 700 }}>{Number(ci.agent.rating).toFixed(1)}</span>
-                    <span style={{ color: '#9ca3af' }}>({ci.agent.reviewsCount})</span>
+                    <span style={{ color: '#6b7280' }}>({ci.agent.reviewsCount})</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontSize: '0.9375rem', fontWeight: 800, color: '#111827' }}>
                       {Number(ci.agent.price) === 0 ? 'Free' : `$${Number(ci.agent.price)}`}
                     </span>
-                    <ArrowRight size={14} style={{ color: '#9ca3af' }} className="group-hover:text-indigo-500 transition-colors" />
+                    <ArrowRight size={14} style={{ color: '#6b7280' }} className="group-hover:text-indigo-500 transition-colors" />
                   </div>
                 </div>
               </div>
