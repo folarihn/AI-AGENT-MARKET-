@@ -1,18 +1,36 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import { useAccount, useDisconnect } from 'wagmi';
 import { useTheme } from 'next-themes';
-import { LogOut, Sun, Moon, ChevronDown, Wallet, Copy, Check, ExternalLink } from 'lucide-react';
+import { useSession, signOut } from 'next-auth/react';
+import { LogOut, Sun, Moon, ChevronDown, Wallet, Copy, Check, ExternalLink, Settings, LayoutDashboard, Upload } from 'lucide-react';
 import { ARC_EXPLORER_URL } from '@/lib/wagmi';
 
 export function DashboardProfile() {
   const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
   const { theme, setTheme } = useTheme();
+  const { data: session } = useSession();
+  const user = session?.user as { name?: string | null; email?: string | null; role?: string } | undefined;
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const dashboard =
+    user?.role === 'ADMIN'
+      ? { href: '/dashboard/admin', label: 'Admin Dashboard' }
+      : user?.role === 'CREATOR'
+      ? { href: '/dashboard/creator', label: 'Creator Dashboard' }
+      : { href: '/dashboard/buyer', label: 'My Library' };
+
+  const rowLink: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
+    padding: '9px 12px', borderRadius: '10px', border: 'none', background: 'transparent',
+    cursor: 'pointer', textDecoration: 'none', color: 'var(--text-primary)',
+    fontSize: '0.8125rem', fontWeight: 500, textAlign: 'left',
+  };
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -46,6 +64,32 @@ export function DashboardProfile() {
 
   return (
     <div ref={menuRef} suppressHydrationWarning style={{ position: 'relative', padding: '0 12px' }}>
+
+      {/* Account links — for any signed-in user (email or wallet) */}
+      {user && (
+        <div style={{ marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px solid var(--divider)' }}>
+          <div style={{
+            padding: '4px 12px 8px', fontSize: '0.8125rem', fontWeight: 600,
+            color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
+            {user.name || user.email}
+          </div>
+          <Link href={dashboard.href} style={rowLink}>
+            <LayoutDashboard size={14} style={{ color: 'var(--text-muted)' }} /> {dashboard.label}
+          </Link>
+          {(user.role === 'CREATOR' || user.role === 'ADMIN') && (
+            <Link href="/dashboard/creator/submit" style={rowLink}>
+              <Upload size={14} style={{ color: 'var(--text-muted)' }} /> Submit
+            </Link>
+          )}
+          <Link href="/settings/profile" style={rowLink}>
+            <Settings size={14} style={{ color: 'var(--text-muted)' }} /> Profile &amp; settings
+          </Link>
+          <button onClick={() => signOut({ callbackUrl: '/' })} style={{ ...rowLink, color: '#ef4444' }}>
+            <LogOut size={14} style={{ color: '#ef4444' }} /> Log out
+          </button>
+        </div>
+      )}
 
       {/* Theme toggle — always visible */}
       <button

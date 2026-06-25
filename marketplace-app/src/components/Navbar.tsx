@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Menu, X, User as UserIcon, Wallet } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { signOut, useSession } from 'next-auth/react';
@@ -14,23 +14,19 @@ export function Navbar() {
   const user = session?.user;
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const router = useRouter();
 
   const { isConnected, chainId } = useAccount();
   const { openConnectModal } = useConnectModal();
   const { switchChain } = useSwitchChain();
 
+  // Keep a connected wallet on Arc, but DON'T auto-navigate — redirecting to
+  // /marketplace whenever a wallet is connected made every other page bounce
+  // back here.
   useEffect(() => {
     if (isConnected && chainId !== ARC_CHAIN_ID) {
       switchChain({ chainId: ARC_CHAIN_ID });
     }
   }, [isConnected, chainId, switchChain]);
-
-  useEffect(() => {
-    if (isConnected) {
-      router.push('/marketplace');
-    }
-  }, [isConnected, router]);
 
   if (pathname === '/marketplace' || pathname?.startsWith('/dashboard/creator')) return null;
 
@@ -97,6 +93,10 @@ export function Navbar() {
               <Link href="/dashboard/creator/submit" style={{ ...navLinkStyle, color: '#6a5acd', fontWeight: 700 }}>
                 + Submit
               </Link>
+            )}
+
+            {user && (
+              <Link href="/settings/profile" style={navLinkStyle}>Settings</Link>
             )}
           </div>
 
@@ -201,6 +201,12 @@ export function Navbar() {
               {(user?.role === 'CREATOR' || user?.role === 'ADMIN') && (
                 <Link href="/dashboard/creator/submit" onClick={() => setIsMobileMenuOpen(false)} style={{ ...mobileLinkStyle, color: '#6a5acd', fontWeight: 700 }}>
                   + Submit Agent / Skill
+                </Link>
+              )}
+
+              {user && (
+                <Link href="/settings/profile" onClick={() => setIsMobileMenuOpen(false)} style={mobileLinkStyle}>
+                  Settings
                 </Link>
               )}
             </div>
