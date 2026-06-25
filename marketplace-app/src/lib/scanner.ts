@@ -197,7 +197,12 @@ export const scanner = {
       await scanSuspicious(content, filename, findings);
     }
 
-    await validateAgentJson(zip, findings);
+    // Skill packages carry skill.json (validated separately in validation.ts) and
+    // must NOT contain agent.json — so only enforce agent.json for agent packages.
+    const hasSkillJson = files.some((f) => f.toLowerCase().endsWith('skill.json'));
+    if (!hasSkillJson) {
+      await validateAgentJson(zip, findings);
+    }
 
     const errors = findings.some((f) => f.severity === 'ERROR');
     return { passed: !errors, findings };
