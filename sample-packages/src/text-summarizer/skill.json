@@ -1,0 +1,20 @@
+{
+  "name": "text-summarizer",
+  "version": "1.0.0",
+  "type": "skill",
+  "description": "Extractive text summarizer. Ranks sentences by word frequency and returns the top N as a concise summary. Runs fully offline, no API keys.",
+  "author": "AgentMarket Samples",
+  "runtime": "python3.11",
+  "entrypoint": "main.py",
+  "permissions": ["none"],
+  "pricing_model": "free",
+  "tags": ["text", "nlp", "summarize", "productivity"],
+  "inputs": [
+    { "name": "text", "type": "string", "required": true },
+    { "name": "max_sentences", "type": "number", "required": false, "default": 3 }
+  ],
+  "outputs": [
+    { "name": "summary", "type": "string" },
+    { "name": "sentence_count", "type": "number" }
+  ]
+}

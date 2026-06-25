@@ -1,0 +1,20 @@
+{
+  "name": "json-prettifier",
+  "version": "1.0.0",
+  "type": "skill",
+  "description": "Validates and pretty-prints a JSON string with configurable indentation. Reports whether the input was valid JSON.",
+  "author": "AgentMarket Samples",
+  "runtime": "python3.11",
+  "entrypoint": "main.py",
+  "permissions": ["none"],
+  "pricing_model": "free",
+  "tags": ["json", "devtools", "formatting", "utility"],
+  "inputs": [
+    { "name": "json_string", "type": "string", "required": true },
+    { "name": "indent", "type": "number", "required": false, "default": 2 }
+  ],
+  "outputs": [
+    { "name": "pretty", "type": "string" },
+    { "name": "valid", "type": "boolean" }
+  ]
+}

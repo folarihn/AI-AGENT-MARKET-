@@ -1,0 +1,9 @@
+{
+  "name": "standup-generator",
+  "display_name": "Daily Standup Generator",
+  "description": "Turns rough notes into a clean, formatted daily standup update with Yesterday / Today / Blockers sections, ready to paste into Slack or email.",
+  "version": "1.0.0",
+  "author": "AgentMarket Samples",
+  "permissions": ["none"],
+  "tags": ["productivity", "communication", "team", "automation"]
+}

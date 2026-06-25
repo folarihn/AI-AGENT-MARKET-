@@ -1,0 +1,21 @@
+{
+  "name": "word-counter",
+  "version": "1.0.0",
+  "type": "skill",
+  "description": "Counts words, characters, and sentences in a block of text and estimates reading time at 200 words per minute.",
+  "author": "AgentMarket Samples",
+  "runtime": "python3.11",
+  "entrypoint": "main.py",
+  "permissions": ["none"],
+  "pricing_model": "free",
+  "tags": ["text", "utility", "writing"],
+  "inputs": [
+    { "name": "text", "type": "string", "required": true }
+  ],
+  "outputs": [
+    { "name": "words", "type": "number" },
+    { "name": "characters", "type": "number" },
+    { "name": "sentences", "type": "number" },
+    { "name": "reading_time_minutes", "type": "number" }
+  ]
+}

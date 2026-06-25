@@ -1,0 +1,9 @@
+{
+  "name": "csv-cleaner",
+  "display_name": "CSV Cleaner",
+  "description": "Cleans messy CSV data: trims whitespace, drops fully empty rows, removes duplicate rows, and normalizes header names to snake_case. Returns clean CSV plus a summary of what changed.",
+  "version": "1.0.0",
+  "author": "AgentMarket Samples",
+  "permissions": ["none"],
+  "tags": ["data", "csv", "cleaning", "devtools"]
+}

@@ -1,0 +1,18 @@
+{
+  "name": "slugify",
+  "version": "1.0.0",
+  "type": "skill",
+  "description": "Converts any title or string into a clean, URL-safe slug (lowercase, hyphenated, ASCII).",
+  "author": "AgentMarket Samples",
+  "runtime": "python3.11",
+  "entrypoint": "main.py",
+  "permissions": ["none"],
+  "pricing_model": "free",
+  "tags": ["text", "url", "devtools", "utility"],
+  "inputs": [
+    { "name": "text", "type": "string", "required": true }
+  ],
+  "outputs": [
+    { "name": "slug", "type": "string" }
+  ]
+}

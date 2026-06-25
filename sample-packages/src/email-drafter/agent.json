@@ -1,0 +1,9 @@
+{
+  "name": "email-drafter",
+  "display_name": "Professional Email Drafter",
+  "description": "Turns a few bullet points into a polished, ready-to-send email. Choose a tone (formal, friendly, or concise) and get a subject line plus body. Offline and deterministic.",
+  "version": "1.0.0",
+  "author": "AgentMarket Samples",
+  "permissions": ["none"],
+  "tags": ["email", "writing", "communication", "productivity"]
+}
