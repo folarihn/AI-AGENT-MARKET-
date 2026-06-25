@@ -1,4 +1,4 @@
-import { Agent } from '@/data/mock';
+import { Agent } from '@/data/types';
 import { prisma } from '@/lib/prisma';
 import { Prisma, Agent as PrismaAgent, AgentStatus, AgentCategory, PricingModel } from '@prisma/client';
 
