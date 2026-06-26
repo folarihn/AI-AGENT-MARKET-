@@ -1,29 +1,14 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useAccount, useSwitchChain } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { useRouter } from 'next/navigation';
 import { Wallet } from 'lucide-react';
-import { ARC_CHAIN_ID } from '@/lib/wagmi';
 
 export function HeroConnectButton() {
-  const { isConnected, chainId } = useAccount();
   const { openConnectModal } = useConnectModal();
-  const { switchChain } = useSwitchChain();
-  const router = useRouter();
 
-  useEffect(() => {
-    if (isConnected && chainId !== ARC_CHAIN_ID) {
-      switchChain({ chainId: ARC_CHAIN_ID });
-    }
-  }, [isConnected, chainId, switchChain]);
-
-  useEffect(() => {
-    if (isConnected) {
-      router.push('/marketplace');
-    }
-  }, [isConnected, router]);
+  // NOTE: do NOT auto-redirect to /marketplace when a wallet is connected — that
+  // made the homepage un-scrollable (it bounced to /marketplace on load for
+  // anyone with a connected wallet).
 
   return (
     <button
