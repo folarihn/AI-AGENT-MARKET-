@@ -37,8 +37,10 @@ export default function ProfileSettingsClient({ initialUser }: { initialUser: Us
     if (!isConnected || !address) { openConnectModal?.(); return; }
     setLinking(true);
     try {
+      // Best-effort: nudge the wallet to Arc, but signing a SIWE message works
+      // on any chain, so don't fail linking if the switch is rejected/unavailable.
       if (chainId !== ARC_CHAIN_ID) {
-        await switchChainAsync({ chainId: ARC_CHAIN_ID });
+        try { await switchChainAsync({ chainId: ARC_CHAIN_ID }); } catch { /* ignore */ }
       }
       const { nonce } = await fetch('/api/auth/nonce').then((r) => r.json());
       const message = new SiweMessage({
@@ -64,8 +66,10 @@ export default function ProfileSettingsClient({ initialUser }: { initialUser: Us
       }
       setWallet(data.walletAddress);
     } catch (e) {
-      const cancelled = e instanceof Error && /reject|denied|cancell/i.test(e.message);
-      setWalletError(cancelled ? 'Signature cancelled' : 'Could not link wallet');
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('linkWallet error:', e);
+      const cancelled = /reject|denied|cancell/i.test(msg);
+      setWalletError(cancelled ? 'Signature cancelled' : `Could not link wallet: ${msg.slice(0, 180)}`);
     } finally {
       setLinking(false);
     }
