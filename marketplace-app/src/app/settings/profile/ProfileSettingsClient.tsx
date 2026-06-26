@@ -42,7 +42,13 @@ export default function ProfileSettingsClient({ initialUser }: { initialUser: Us
       if (chainId !== ARC_CHAIN_ID) {
         try { await switchChainAsync({ chainId: ARC_CHAIN_ID }); } catch { /* ignore */ }
       }
-      const { nonce } = await fetch('/api/auth/nonce').then((r) => r.json());
+      const nonceRes = await fetch('/api/auth/nonce');
+      const nonceData = await nonceRes.json().catch(() => ({}));
+      if (!nonceRes.ok || !nonceData?.nonce) {
+        setWalletError(nonceData?.error ? `Could not start: ${nonceData.error}` : 'Could not get a nonce — wait a minute and retry.');
+        return;
+      }
+      const nonce = nonceData.nonce as string;
       const message = new SiweMessage({
         domain: window.location.host,
         address,
@@ -66,8 +72,10 @@ export default function ProfileSettingsClient({ initialUser }: { initialUser: Us
       }
       setWallet(data.walletAddress);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
       console.error('linkWallet error:', e);
+      const anyE = e as { shortMessage?: string; details?: string; message?: string };
+      const msg = anyE?.shortMessage || anyE?.details || anyE?.message ||
+        (typeof e === 'string' ? e : 'unexpected error');
       const cancelled = /reject|denied|cancell/i.test(msg);
       setWalletError(cancelled ? 'Signature cancelled' : `Could not link wallet: ${msg.slice(0, 180)}`);
     } finally {

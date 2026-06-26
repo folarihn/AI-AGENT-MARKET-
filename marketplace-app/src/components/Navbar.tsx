@@ -10,8 +10,9 @@ import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { ARC_CHAIN_ID } from '@/lib/wagmi';
 
 export function Navbar() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const user = session?.user;
+  const sessionLoading = status === 'loading';
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -48,6 +49,7 @@ export function Navbar() {
   };
 
   return (
+    <>
     <nav className="fixed top-0 left-0 right-0 z-50 px-4 pt-4">
       <div className="max-w-6xl mx-auto">
         <div className="glass-nav px-6 py-2 flex items-center justify-between">
@@ -102,7 +104,7 @@ export function Navbar() {
 
           {/* Desktop Auth */}
           <div className="hidden sm:flex items-center" style={{ gap: '12px' }}>
-            {user ? (
+            {sessionLoading ? null : user ? (
               <>
                 <span style={{ fontSize: '0.875rem', color: '#4b5563', fontWeight: 500 }}>{user.name}</span>
                 <button
@@ -278,5 +280,8 @@ export function Navbar() {
         )}
       </div>
     </nav>
+    {/* Spacer so page content isn't hidden under the fixed navbar. */}
+    <div aria-hidden style={{ height: '76px' }} />
+    </>
   );
 }
