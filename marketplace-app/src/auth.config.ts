@@ -16,6 +16,11 @@ type AppUserRole = 'BUYER' | 'CREATOR' | 'ADMIN';
  */
 export const authConfig = {
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+  // Derive the canonical URL from the incoming request host instead of a fixed
+  // env value, so auth works on whatever Vercel alias / domain is being used
+  // (rose, khaki, custom domain, preview URLs). Without this a stale AUTH_URL
+  // pinned to a different alias breaks the session cookie + sign-in callbacks.
+  trustHost: true,
   session: {
     strategy: 'jwt',
   },
