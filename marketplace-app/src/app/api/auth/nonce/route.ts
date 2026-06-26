@@ -16,7 +16,10 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const nonce = randomUUID();
+  // SIWE (EIP-4361) requires an alphanumeric nonce of 8+ chars. A raw UUID
+  // contains hyphens, which makes the signed message invalid and causes wallet
+  // sign-in / linking / payment verification to fail. Strip the hyphens.
+  const nonce = randomUUID().replace(/-/g, '');
   const expiresAt = new Date(Date.now() + NONCE_EXPIRY_MINUTES * 60 * 1000);
 
   await prisma.nonce.create({

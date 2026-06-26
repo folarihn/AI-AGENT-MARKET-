@@ -108,7 +108,7 @@ export function Navbar() {
               <>
                 <span style={{ fontSize: '0.875rem', color: '#4b5563', fontWeight: 500 }}>{user.name}</span>
                 <button
-                  onClick={() => signOut({ callbackUrl: '/marketplace' })}
+                  onClick={() => signOut({ callbackUrl: '/' })}
                   style={{
                     fontSize: '0.875rem', fontWeight: 500, color: '#4b5563',
                     background: 'none', border: 'none', cursor: 'pointer',
@@ -225,7 +225,7 @@ export function Navbar() {
                     <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{user.email}</div>
                   </div>
                   <button
-                    onClick={() => signOut({ callbackUrl: '/marketplace' })}
+                    onClick={() => signOut({ callbackUrl: '/' })}
                     style={{ fontSize: '0.8125rem', fontWeight: 500, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer' }}
                   >
                     Logout
