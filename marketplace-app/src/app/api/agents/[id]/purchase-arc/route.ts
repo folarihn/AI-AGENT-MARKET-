@@ -1,22 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createPublicClient, http, decodeEventLog, getAddress, type Hex } from 'viem';
+import { createPublicClient, http, getAddress, parseEther, type Hex } from 'viem';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
-import { ARC_CHAIN_ID, ARC_RPC_URL, USDC_ADDRESS } from '@/lib/wagmi';
+import { ARC_CHAIN_ID, ARC_RPC_URL } from '@/lib/wagmi';
 
 export const runtime = 'nodejs';
 
-const TRANSFER_EVENT = {
-  type: 'event',
-  name: 'Transfer',
-  inputs: [
-    { name: 'from', type: 'address', indexed: true },
-    { name: 'to', type: 'address', indexed: true },
-    { name: 'value', type: 'uint256', indexed: false },
-  ],
-} as const;
+// On Arc, USDC is the NATIVE gas token (18 decimals) — payment is a native
+// value transfer, not an ERC-20 transfer. 1 USDC = parseEther('1') wei.
+function priceToWei(price: number): bigint {
+  return parseEther(price.toString());
+}
 
 function arcClient() {
   return createPublicClient({
@@ -28,11 +24,6 @@ function arcClient() {
     },
     transport: http(ARC_RPC_URL),
   });
-}
-
-// USDC ERC-20 interface uses 6 decimals on Arc.
-function priceToUnits(price: number): bigint {
-  return BigInt(Math.round(price * 1_000_000));
 }
 
 // GET → payment details the client needs to build the USDC transfer.
@@ -54,10 +45,8 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   }
   return NextResponse.json({
     creatorWallet: creator.walletAddress,
-    usdcAddress: USDC_ADDRESS,
     chainId: ARC_CHAIN_ID,
-    priceUnits: priceToUnits(agent.price).toString(),
-    decimals: 6,
+    valueWei: priceToWei(agent.price).toString(), // native USDC, 18 decimals
     price: agent.price,
   });
 }
@@ -118,33 +107,31 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     return NextResponse.json({ error: 'Creator has no wallet to receive payment' }, { status: 409 });
   }
 
-  // Verify the on-chain USDC transfer.
+  // Verify the on-chain native USDC transfer (to == creator, from == buyer,
+  // value >= price). USDC is the native token on Arc, so it's a plain value
+  // transfer, not an ERC-20 event.
   let verified = false;
   try {
     const client = arcClient();
-    const receipt = await client.getTransactionReceipt({ hash: txHash as Hex });
+    const [tx, receipt] = await Promise.all([
+      client.getTransaction({ hash: txHash as Hex }),
+      client.getTransactionReceipt({ hash: txHash as Hex }),
+    ]);
     if (receipt.status !== 'success') {
       return NextResponse.json({ error: 'Transaction failed on-chain' }, { status: 400 });
     }
 
     const wantTo = getAddress(creator.walletAddress);
     const wantFrom = getAddress(buyerWallet);
-    const wantValue = priceToUnits(agent.price);
-    const usdc = getAddress(USDC_ADDRESS);
+    const wantValue = priceToWei(agent.price);
 
-    for (const log of receipt.logs) {
-      if (getAddress(log.address) !== usdc) continue;
-      try {
-        const decoded = decodeEventLog({ abi: [TRANSFER_EVENT], data: log.data, topics: log.topics });
-        if (decoded.eventName !== 'Transfer') continue;
-        const { from, to, value } = decoded.args as { from: string; to: string; value: bigint };
-        if (getAddress(from) === wantFrom && getAddress(to) === wantTo && value >= wantValue) {
-          verified = true;
-          break;
-        }
-      } catch {
-        // not a Transfer log; skip
-      }
+    if (
+      tx.to &&
+      getAddress(tx.to) === wantTo &&
+      getAddress(tx.from) === wantFrom &&
+      tx.value >= wantValue
+    ) {
+      verified = true;
     }
   } catch (err) {
     console.error('Arc purchase verification error:', err);

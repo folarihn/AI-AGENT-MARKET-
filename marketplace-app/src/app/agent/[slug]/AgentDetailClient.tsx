@@ -16,7 +16,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
-import { useAccount, useSwitchChain, useWriteContract, usePublicClient, useSignMessage } from 'wagmi';
+import { useAccount, useSwitchChain, useSendTransaction, usePublicClient, useSignMessage } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { SiweMessage } from 'siwe';
 import { ARC_CHAIN_ID, ARC_EXPLORER_URL } from '@/lib/wagmi';
@@ -294,26 +294,6 @@ function ChangelogSection({ agentId }: { agentId: string }) {
   );
 }
 
-const ERC20_ABI = [
-  {
-    type: 'function',
-    name: 'transfer',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'to', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    outputs: [{ name: '', type: 'bool' }],
-  },
-  {
-    type: 'function',
-    name: 'balanceOf',
-    stateMutability: 'view',
-    inputs: [{ name: 'account', type: 'address' }],
-    outputs: [{ name: '', type: 'uint256' }],
-  },
-] as const;
-
 export default function AgentDetailClient({
   agent,
   initialReviewSummary,
@@ -339,7 +319,7 @@ export default function AgentDetailClient({
   const { address, isConnected, chainId } = useAccount();
   const { openConnectModal } = useConnectModal();
   const { switchChainAsync } = useSwitchChain();
-  const { writeContractAsync } = useWriteContract();
+  const { sendTransactionAsync } = useSendTransaction();
   const { signMessageAsync } = useSignMessage();
   const publicClient = usePublicClient();
 
@@ -422,16 +402,15 @@ export default function AgentDetailClient({
         return;
       }
 
-      // Pre-flight USDC balance check.
+      const valueWei = BigInt(info.valueWei);
+
+      // Pre-flight balance check against the NATIVE USDC balance (USDC is the
+      // native gas token on Arc, so balance is read with getBalance, not an
+      // ERC-20 balanceOf).
       if (publicClient) {
         setPayStatus('Checking USDC balance…');
-        const balance = (await publicClient.readContract({
-          address: info.usdcAddress as `0x${string}`,
-          abi: ERC20_ABI,
-          functionName: 'balanceOf',
-          args: [address],
-        })) as bigint;
-        if (balance < BigInt(info.priceUnits)) {
+        const balance = await publicClient.getBalance({ address });
+        if (balance < valueWei) {
           alert('Not enough USDC on Arc Testnet. Get test USDC from faucet.circle.com and try again.');
           setPayStatus(null);
           return;
@@ -439,11 +418,10 @@ export default function AgentDetailClient({
       }
 
       setPayStatus('Confirm the USDC payment in your wallet…');
-      const hash = await writeContractAsync({
-        address: info.usdcAddress as `0x${string}`,
-        abi: ERC20_ABI,
-        functionName: 'transfer',
-        args: [info.creatorWallet as `0x${string}`, BigInt(info.priceUnits)],
+      // Native USDC transfer (not ERC-20) — send value directly to the creator.
+      const hash = await sendTransactionAsync({
+        to: info.creatorWallet as `0x${string}`,
+        value: valueWei,
         chainId: ARC_CHAIN_ID,
       });
       setLastTx(hash);
