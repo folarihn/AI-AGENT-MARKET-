@@ -29,7 +29,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: 'Password', type: 'password' },
       },
       authorize: async (credentials) => {
-        const email = typeof credentials?.email === 'string' ? credentials.email : '';
+        // Emails are stored lowercased at registration, so normalise here too —
+        // otherwise a capital letter in the typed email fails to match and login
+        // silently returns null ("CredentialsSignin").
+        const email = typeof credentials?.email === 'string' ? credentials.email.trim().toLowerCase() : '';
         const password = typeof credentials?.password === 'string' ? credentials.password : '';
 
         if (!email || !password) return null;
