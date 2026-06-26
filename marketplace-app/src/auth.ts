@@ -128,15 +128,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         (token as unknown as { role?: AppUserRole }).role = user.role;
       }
-      if (token?.sub) {
-        const dbUser = await prisma.user.findUnique({ where: { id: token.sub } });
-        if (dbUser) {
-          (token as unknown as { role?: AppUserRole }).role = dbUser.role;
-          (token as unknown as { walletAddress?: string }).walletAddress = dbUser.walletAddress || undefined;
+      // Load role + walletAddress from the DB ONLY at sign-in or on an explicit
+      // session update — NOT on every request. Doing it per-request hammered the
+      // connection pool and, if the query ever threw (transient pooler/cold-start
+      // error), broke the whole session — surfacing as "logged in but asked to
+      // sign in" and, at scale, intermittent logouts for everyone. Wrapped in
+      // try/catch so a DB hiccup never invalidates an otherwise-valid session.
+      if ((user || trigger === 'update') && token?.sub) {
+        try {
+          const dbUser = await prisma.user.findUnique({ where: { id: token.sub } });
+          if (dbUser) {
+            (token as unknown as { role?: AppUserRole }).role = dbUser.role;
+            (token as unknown as { walletAddress?: string }).walletAddress = dbUser.walletAddress || undefined;
+          }
+        } catch (err) {
+          console.error('jwt callback: DB lookup failed, keeping existing token:', err);
         }
       }
       return token;

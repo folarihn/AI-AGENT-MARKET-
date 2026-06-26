@@ -37,6 +37,12 @@ const nextConfig: NextConfig = {
 
     return [
       {
+        // Never cache auth responses (session/csrf/providers) — a cached session
+        // response could otherwise show the wrong (or no) login state.
+        source: '/api/auth/:path*',
+        headers: [{ key: 'Cache-Control', value: 'no-store, max-age=0' }],
+      },
+      {
         // Apply baseline security headers to every response.
         source: '/:path*',
         headers: [
