@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { createPublicClient, http } from 'viem';
-import { ARC_CHAIN_ID, ARC_RPC_URL } from '@/lib/wagmi';
+import { ARC_CHAIN_ID, ARC_RPC_URL } from '@/lib/arc/config';
 
 const ESCROW_ADDRESS = process.env.NEXT_PUBLIC_ESCROW_ADDRESS;
 

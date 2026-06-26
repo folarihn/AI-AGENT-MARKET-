@@ -4,7 +4,7 @@ import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
-import { ARC_CHAIN_ID, ARC_RPC_URL } from '@/lib/wagmi';
+import { ARC_CHAIN_ID, ARC_RPC_URL } from '@/lib/arc/config';
 
 export const runtime = 'nodejs';
 

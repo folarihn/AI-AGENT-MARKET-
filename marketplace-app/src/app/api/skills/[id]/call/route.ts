@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { createPublicClient, createWalletClient, http } from 'viem';
-import { ARC_CHAIN_ID, ARC_RPC_URL } from '@/lib/wagmi';
+import { ARC_CHAIN_ID, ARC_RPC_URL } from '@/lib/arc/config';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { writeFileSync, mkdirSync, rmSync, existsSync } from 'fs';

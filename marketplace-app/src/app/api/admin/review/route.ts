@@ -4,7 +4,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { createWalletClient, createPublicClient, http, keccak256, toBytes } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { ARC_CHAIN_ID, ARC_RPC_URL } from '@/lib/wagmi';
+import { ARC_CHAIN_ID, ARC_RPC_URL } from '@/lib/arc/config';
 import { sendEmail, agentApprovedEmail, agentRejectedEmail } from '@/lib/email';
 
 const ESCROW_ADDRESS = process.env.NEXT_PUBLIC_ESCROW_ADDRESS;
