@@ -138,7 +138,10 @@ export default function SubmitAgentPage() {
                 Submit an Agent
               </h1>
               <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0 }}>
-                Publish to the AgentMarket marketplace
+                Publish to the AgentMarket marketplace ·{' '}
+                <Link href="/submit-guidelines" style={{ color: '#6a5acd', fontWeight: 600, textDecoration: 'none' }}>
+                  Read the submission guidelines
+                </Link>
               </p>
             </div>
           </div>
