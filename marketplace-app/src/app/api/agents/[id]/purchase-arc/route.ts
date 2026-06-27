@@ -28,6 +28,12 @@ function arcClient() {
 
 // GET → payment details the client needs to build the USDC transfer.
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  // Require auth so creator wallet addresses can't be enumerated anonymously.
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { id } = await ctx.params;
   const agent = await db.agents.findById(id);
   if (!agent || agent.status !== 'PUBLISHED') {
