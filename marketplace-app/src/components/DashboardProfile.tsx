@@ -77,11 +77,9 @@ export function DashboardProfile() {
           <Link href={dashboard.href} style={rowLink}>
             <LayoutDashboard size={14} style={{ color: 'var(--text-muted)' }} /> {dashboard.label}
           </Link>
-          {(user.role === 'CREATOR' || user.role === 'ADMIN') && (
-            <Link href="/dashboard/creator/submit" style={rowLink}>
-              <Upload size={14} style={{ color: 'var(--text-muted)' }} /> Submit
-            </Link>
-          )}
+          <Link href="/dashboard/creator/submit" style={rowLink}>
+            <Upload size={14} style={{ color: 'var(--text-muted)' }} /> Submit
+          </Link>
           <Link href="/settings/profile" style={rowLink}>
             <Settings size={14} style={{ color: 'var(--text-muted)' }} /> Profile &amp; settings
           </Link>
