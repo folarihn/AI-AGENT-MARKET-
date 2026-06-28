@@ -11,6 +11,7 @@ export default function LoginClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/marketplace';
+  const verified = searchParams.get('verified');
 
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [error, setError] = useState<string | null>(null);
@@ -140,6 +141,22 @@ export default function LoginClient() {
             Sign up
           </Button>
         </div>
+
+        {verified === 'success' && (
+          <div className="p-3 bg-green-50 text-green-700 rounded-md border border-green-200 text-sm">
+            Email verified — you can sign in now.
+          </div>
+        )}
+        {verified === 'expired' && (
+          <div className="p-3 bg-amber-50 text-amber-800 rounded-md border border-amber-200 text-sm">
+            That verification link expired. Sign in and use “Resend email” to get a new one.
+          </div>
+        )}
+        {verified === 'invalid' && (
+          <div className="p-3 bg-red-50 text-red-700 rounded-md border border-red-200 text-sm">
+            That verification link is invalid or already used.
+          </div>
+        )}
 
         {error && (
           <div className="p-3 bg-red-50 text-red-700 rounded-md border border-red-200 text-sm">

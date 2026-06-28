@@ -51,6 +51,23 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
   }
 }
 
+export function verificationEmail(opts: {
+  name: string;
+  verifyUrl: string;
+}): Pick<EmailPayload, 'subject' | 'html'> {
+  return {
+    subject: 'Verify your email for AgentMarket',
+    html:
+      '<h2>Welcome' + (opts.name ? ', ' + opts.name : '') + '!</h2>' +
+      '<p>Confirm your email address to finish setting up your AgentMarket account.</p>' +
+      '<p style="margin:24px 0;">' +
+      '<a href="' + opts.verifyUrl + '" style="background:#6a5acd;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:600;">Verify email</a>' +
+      '</p>' +
+      '<p style="color:#6b7280;font-size:13px;">Or paste this link into your browser:<br/>' + opts.verifyUrl + '</p>' +
+      '<p style="color:#6b7280;font-size:12px;">This link expires in 24 hours. If you didn&rsquo;t create an account, you can ignore this email.</p>',
+  };
+}
+
 export function agentApprovedEmail(opts: {
   creatorName: string;
   agentName: string;

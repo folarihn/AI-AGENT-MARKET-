@@ -4,6 +4,7 @@ import '@rainbow-me/rainbowkit/styles.css';
 import { AppProviders } from '@/components/AppProviders';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { VerifyEmailBanner } from '@/components/VerifyEmailBanner';
 
 export const metadata: Metadata = {
   title: 'AI Agent Marketplace',
@@ -21,6 +22,7 @@ export default function RootLayout({
         <AppProviders>
           <div className="min-h-screen flex flex-col" style={{ background: 'transparent' }}>
             <Navbar />
+            <VerifyEmailBanner />
             <main className="flex-grow">
               {children}
             </main>
