@@ -14,6 +14,8 @@ import {
   BellRing,
   CheckCircle,
   ChevronDown,
+  Link2,
+  Check,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useAccount, useSwitchChain, useSendTransaction, usePublicClient, useSignMessage } from 'wagmi';
@@ -24,6 +26,7 @@ import ReviewForm from '@/components/ReviewForm';
 import ReviewList from '@/components/ReviewList';
 import SecurityPermissions, { type ScanSummary } from '@/components/SecurityPermissions';
 import ReportAgentModal from '@/components/ReportAgentModal';
+import { FavoriteButton } from '@/components/FavoriteButton';
 
 export type AgentDetail = {
   id: string;
@@ -315,6 +318,7 @@ export default function AgentDetailClient({
   const [reviewSummary, setReviewSummary] = useState(initialReviewSummary);
   const [payStatus, setPayStatus] = useState<string | null>(null);
   const [lastTx, setLastTx] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const { address, isConnected, chainId } = useAccount();
   const { openConnectModal } = useConnectModal();
@@ -487,6 +491,30 @@ export default function AgentDetailClient({
               <span className="font-semibold">{reviewSummary.averageRating.toFixed(1)} / 5</span> ·{' '}
               {reviewSummary.reviewCount} reviews
             </p>
+            <div className="mt-3 flex items-center gap-2">
+              <FavoriteButton agentId={agent.id} />
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href).then(() => {
+                    setLinkCopied(true);
+                    setTimeout(() => setLinkCopied(false), 2000);
+                  });
+                }}
+                className="inline-flex items-center gap-1.5 rounded-full border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+              >
+                {linkCopied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Link2 className="h-3.5 w-3.5" />}
+                {linkCopied ? 'Copied' : 'Copy link'}
+              </button>
+              <a
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${agent.displayName} on AgentMarket`)}&url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 no-underline hover:bg-gray-50"
+              >
+                Share on X
+              </a>
+            </div>
           </div>
           <div className="flex flex-col items-end">
             <span className="text-2xl font-bold text-gray-900">{agent.price === 0 ? 'Free' : `${agent.price} USDC`}</span>

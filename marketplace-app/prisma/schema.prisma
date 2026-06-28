@@ -440,3 +440,14 @@ model CustomRequest {
 
   @@index([status, createdAt])
 }
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  agentId   String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, agentId])
+  @@index([userId])
+  @@index([agentId])
+}

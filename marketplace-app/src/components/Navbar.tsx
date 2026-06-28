@@ -98,6 +98,10 @@ export function Navbar() {
             )}
 
             {user && (
+              <Link href="/favorites" style={navLinkStyle}>Saved</Link>
+            )}
+
+            {user && (
               <Link href="/settings/profile" style={navLinkStyle}>Settings</Link>
             )}
           </div>

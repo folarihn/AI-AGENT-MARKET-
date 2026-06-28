@@ -3,6 +3,7 @@ import './globals.css';
 import '@rainbow-me/rainbowkit/styles.css';
 import { AppProviders } from '@/components/AppProviders';
 import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
 
 export const metadata: Metadata = {
   title: 'AI Agent Marketplace',
@@ -23,6 +24,7 @@ export default function RootLayout({
             <main className="flex-grow">
               {children}
             </main>
+            <Footer />
           </div>
         </AppProviders>
       </body>

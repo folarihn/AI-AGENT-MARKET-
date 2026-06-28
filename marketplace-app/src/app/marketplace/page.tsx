@@ -456,8 +456,26 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
             ))}
 
             {agents.length === 0 && (
-              <div style={{ padding: '64px 24px', textAlign: 'center', color: '#6b7280', fontSize: '0.9375rem' }}>
-                No agents found matching your criteria.
+              <div style={{ padding: '56px 24px', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  Nothing here yet
+                </div>
+                <div style={{ fontSize: '0.8125rem', color: '#6b7280', marginTop: '4px' }}>
+                  {q || rawCat || rawType
+                    ? 'No results match your filters — try clearing them.'
+                    : 'This space is open. Be the first to list one here.'}
+                </div>
+                <Link
+                  href="/dashboard/creator/submit"
+                  style={{
+                    display: 'inline-block', marginTop: '16px',
+                    padding: '9px 20px', borderRadius: '999px',
+                    background: '#6a5acd', color: '#fff',
+                    fontSize: '0.8125rem', fontWeight: 600, textDecoration: 'none',
+                  }}
+                >
+                  + List your agent or skill
+                </Link>
               </div>
             )}
           </div>
